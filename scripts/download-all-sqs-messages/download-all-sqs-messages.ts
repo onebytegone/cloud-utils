@@ -20,7 +20,7 @@ const sqs = new SQSClient({}),
       const messages = await sqs.send(new ReceiveMessageCommand({ QueueUrl: queueURL, MaxNumberOfMessages: 10 }));
 
       messages.Messages?.forEach((message) => {
-         writeStream.write(JSON.stringify(message));
+         writeStream.write(JSON.stringify(message) + '\n');
       });
 
       if (argv.delete && messages.Messages?.length) {
