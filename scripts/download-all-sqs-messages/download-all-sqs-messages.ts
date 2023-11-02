@@ -2,16 +2,17 @@ import minimist from 'minimist';
 import { getRequiredArg } from '../../lib/minimist/get-required-arg';
 import { DeleteMessageBatchCommand, GetQueueUrlCommand, ReceiveMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { createWriteStream } from 'fs';
+import { DateTime } from 'luxon';
 
 const sqs = new SQSClient({}),
       argv = minimist(process.argv, { string: [ 'queue-name', 'output' ], boolean: [ 'dry-run', 'delete' ] }),
       queueName = getRequiredArg(argv, 'queue-name'),
-      outputFile = getRequiredArg(argv, 'output');
+      outputFile = argv.output ? argv.output : `${queueName}-${DateTime.utc().toFormat('yyyy-LL-dd\'T\'HHmmss')}.json`;
 
 (async () => {
    const queueURL = (await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }))).QueueUrl;
 
-   console.info(`Downloading messages from: ${queueURL}`);
+   console.info(`Downloading messages from: ${queueURL} to ${outputFile}`);
 
    const writeStream = createWriteStream(outputFile, 'utf-8');
 
