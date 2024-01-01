@@ -43,19 +43,22 @@ const sqs = new SQSClient({}),
    }
 
    await new Promise<void>((resolve, reject) => {
-      async function loop(): Promise<void> {
+      async function loop(emptyReceiveCount: number = 0): Promise<void> {
          try {
             const numberOfMessagesProcessed = await processBatch();
 
-            if (numberOfMessagesProcessed === 0) {
+            if (numberOfMessagesProcessed === 0 && emptyReceiveCount >= 3) {
                console.info('No messages appear to be left, finishing up...');
                resolve();
                return;
+            } else if (numberOfMessagesProcessed === 0) {
+               emptyReceiveCount += 1;
+               console.info(`No messages appear to be left, waiting (check ${emptyReceiveCount})...`);
             } else {
                console.info(`Processed ${numberOfMessagesProcessed} messages...`);
             }
 
-            setTimeout(loop, 1000);
+            setTimeout(loop.bind(null, emptyReceiveCount), 100);
          } catch(e) {
             reject(e);
          }
