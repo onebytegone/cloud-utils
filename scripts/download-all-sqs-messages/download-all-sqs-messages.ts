@@ -7,7 +7,7 @@ import { dirname, join } from 'path';
 import { mkdir } from 'fs/promises';
 
 const sqs = new SQSClient({}),
-      argv = minimist(process.argv, { string: [ 'queue-name', 'output' ], boolean: [ 'dry-run', 'delete' ] }),
+      argv = minimist(process.argv, { string: [ 'queue-name', 'output' ], boolean: [ 'delete' ] }),
       queueName = getRequiredArg(argv, 'queue-name'),
       outputFile = argv.output ? argv.output : join('output', `${queueName}-${DateTime.utc().toFormat('yyyy-LL-dd\'T\'HHmmss')}.json`);
 
