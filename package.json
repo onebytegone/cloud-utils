@@ -24,13 +24,11 @@
       "@types/luxon": "3.3.3",
       "commander": "11.1.0",
       "luxon": "3.4.3",
-      "minimist": "1.2.8",
       "p-queue": "6.6.2"
    },
    "devDependencies": {
       "@silvermine/standardization": "2.2.0",
       "@silvermine/typescript-config": "1.0.0",
-      "@types/minimist": "1.2.2",
       "esbuild": "0.20.0",
       "ts-node": "10.9.1"
    }
