@@ -1,4 +1,4 @@
-# AWS Utils
+# Cloud Utils
 
 ## What?
 
