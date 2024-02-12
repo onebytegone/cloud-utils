@@ -1,17 +1,37 @@
 {
-  "dependencies": {
-    "@aws-sdk/client-sfn": "3.370.0",
-    "@aws-sdk/client-sqs": "3.410.0",
-    "@silvermine/toolbox": "0.2.0",
-    "@types/luxon": "3.3.3",
-    "luxon": "3.4.3",
-    "minimist": "1.2.8",
-    "p-queue": "6.6.2"
-  },
-  "devDependencies": {
-    "@silvermine/standardization": "2.2.0",
-    "@silvermine/typescript-config": "1.0.0",
-    "@types/minimist": "1.2.2",
-    "ts-node": "10.9.1"
-  }
+   "name": "@onebytegone/cloud-utils",
+   "version": "0.1.0",
+   "bin": {
+      "cloud-utils": "./bin/npmcli.sh"
+   },
+   "scripts": {
+      "prepare": "esbuild src/cli.ts --bundle --platform=node --outfile=dist/cli.js",
+      "commitlint": "./node_modules/.bin/commitlint --from c19fb36a",
+      "check-node-version": "check-node-version --npm 10.10.10",
+      "eslint": "eslint .",
+      "markdownlint": "markdownlint -c .markdownlint.json -i CHANGELOG.md '{,!(node_modules)/**/}*.md'",
+      "standards": "npm run commitlint && npm run markdownlint && npm run eslint",
+      "release:preview": "node ./node_modules/@silvermine/standardization/scripts/release.js preview",
+      "release:prep-changelog": "node ./node_modules/@silvermine/standardization/scripts/release.js prep-changelog",
+      "release:finalize": "node ./node_modules/@silvermine/standardization/scripts/release.js finalize"
+   },
+   "author": "Ethan Smith",
+   "license": "MIT",
+   "dependencies": {
+      "@aws-sdk/client-sfn": "3.370.0",
+      "@aws-sdk/client-sqs": "3.410.0",
+      "@silvermine/toolbox": "0.2.0",
+      "@types/luxon": "3.3.3",
+      "commander": "11.1.0",
+      "luxon": "3.4.3",
+      "minimist": "1.2.8",
+      "p-queue": "6.6.2"
+   },
+   "devDependencies": {
+      "@silvermine/standardization": "2.2.0",
+      "@silvermine/typescript-config": "1.0.0",
+      "@types/minimist": "1.2.2",
+      "esbuild": "0.20.0",
+      "ts-node": "10.9.1"
+   }
 }
