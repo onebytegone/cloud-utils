@@ -20,7 +20,7 @@
       "@aws-sdk/client-cloudwatch": "3.511.0",
       "@aws-sdk/client-sfn": "3.370.0",
       "@aws-sdk/client-sqs": "3.410.0",
-      "@silvermine/standardization": "2.2.0",
+      "@silvermine/standardization": "2.2.3",
       "@silvermine/toolbox": "0.2.0",
       "@silvermine/typescript-config": "1.0.0",
       "@types/luxon": "3.3.3",
