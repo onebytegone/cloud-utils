@@ -7,7 +7,7 @@ import registerStepFunctionsListExecutions from './commands/step-functions/list-
 const program = new Command();
 
 program.name('cloud-utils');
-program.version(version)
+program.version(version);
 
 const sqs = program.command('sqs')
    .description('Commands related to Amazon SQS');

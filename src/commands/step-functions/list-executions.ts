@@ -27,8 +27,6 @@ interface CommandOptions {
 }
 
 async function listExecutions(this: Command, opts: CommandOptions): Promise<void> {
-   console.log(opts);
-
    const stateMachineArn = await getStateMachineARN(sfn, opts.name);
 
    if (!stateMachineArn) {
@@ -64,6 +62,7 @@ async function listExecutions(this: Command, opts: CommandOptions): Promise<void
             for await (const historyResp of paginateGetExecutionHistory({ client: sfn }, historyParams)) {
                events.push(...(historyResp.events || []));
 
+               // eslint-disable-next-line max-depth
                if (opts.maxEvents && events.length >= opts.maxEvents) {
                   // TODO: should events be trimmed to opts.maxEvents?
                   break;
@@ -71,7 +70,7 @@ async function listExecutions(this: Command, opts: CommandOptions): Promise<void
             }
          }
 
-         foundExecutions ++;
+         foundExecutions += 1;
          writeStream.write(JSON.stringify({
             ...execution,
             events: opts.history ? events : undefined,
@@ -88,6 +87,7 @@ async function listExecutions(this: Command, opts: CommandOptions): Promise<void
 }
 
 export default function register(command: Command): void {
+   /* eslint-disable @silvermine/silvermine/call-indentation */
    command
       .requiredOption('--name <string>', 'name of the state machine')
       .option('-o, --output <string>', 'name of the file to write the executions')
@@ -119,5 +119,6 @@ export default function register(command: Command): void {
             })
             .implies({ history: 'head' })
       )
-      .action(listExecutions)
+      .action(listExecutions);
+   /* eslint-enable @silvermine/silvermine/call-indentation */
 }
