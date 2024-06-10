@@ -5,7 +5,7 @@
       "cloud-utils": "./bin/cli.sh"
    },
    "scripts": {
-      "commitlint": "./node_modules/.bin/commitlint --from 0f483ef",
+      "commitlint": "./node_modules/.bin/commitlint --from 6dc14c00",
       "check-node-version": "check-node-version --npm 10.5.0",
       "eslint": "eslint '{,!(node_modules|dist)/**/}*.{js,ts}'",
       "markdownlint": "markdownlint-cli2",
