@@ -33,7 +33,7 @@ async function downloadMessages(this: Command, opts: CommandOptions): Promise<vo
 
       const newMessageCount = (messages.Messages || []).reduce((memo, message) => {
          if (message.MessageId && !processedMessages.has(message.MessageId)) {
-            processedMessages.add(message.MessageId)
+            processedMessages.add(message.MessageId);
             writeStream.write(JSON.stringify(message) + '\n');
             return memo + 1;
          }
@@ -88,6 +88,7 @@ async function downloadMessages(this: Command, opts: CommandOptions): Promise<vo
 }
 
 export default function register(command: Command): void {
+   /* eslint-disable @silvermine/silvermine/call-indentation */
    command
       .description(
          'Downloads all available messages from an SQS queue. WARNING: if this script is'
@@ -107,5 +108,6 @@ export default function register(command: Command): void {
             })
             .default(10)
       )
-      .action(downloadMessages)
+      .action(downloadMessages);
+   /* eslint-enable @silvermine/silvermine/call-indentation */
 }

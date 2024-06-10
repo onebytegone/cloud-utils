@@ -17,7 +17,7 @@ async function generateOldestMessageReport(this: Command, opts: CommandOptions):
          listResp = await sqs.send(new ListQueuesCommand({}));
 
    if (listResp.NextToken) {
-      quitWithError(`ERROR: pagination is not supported`);
+      quitWithError('ERROR: pagination is not supported');
    }
 
    const records: { queue: string; messages: number; secondsToLoss?: number }[] = [];
@@ -29,7 +29,7 @@ async function generateOldestMessageReport(this: Command, opts: CommandOptions):
             'ApproximateNumberOfMessages',
             'MessageRetentionPeriod',
             'QueueArn',
-         ]
+         ],
       }));
 
       if (!attrResp.Attributes) {
@@ -68,14 +68,14 @@ async function generateOldestMessageReport(this: Command, opts: CommandOptions):
       records.push({
          queue: queueName,
          messages,
-         secondsToLoss: isEmpty(datapoints) ?  undefined : retentionSeconds - (datapoints[datapoints.length - 1].Maximum || 0),
+         secondsToLoss: isEmpty(datapoints) ? undefined : retentionSeconds - (datapoints[datapoints.length - 1].Maximum || 0),
       });
    }
 
    records.sort((a, b) => {
       if (a.secondsToLoss !== b.secondsToLoss) {
          return (isUndefined(a.secondsToLoss) ? Number.MAX_SAFE_INTEGER : a.secondsToLoss)
-            - (isUndefined(b.secondsToLoss) ? Number.MAX_SAFE_INTEGER : b.secondsToLoss) ;
+            - (isUndefined(b.secondsToLoss) ? Number.MAX_SAFE_INTEGER : b.secondsToLoss);
       }
 
       if (a.messages !== b.messages) {
@@ -125,5 +125,5 @@ export default function register(command: Command): void {
    command
       .description('Generates a report of which SQS queues have messages nearing expiration')
       .option('--region <value>', 'Region to send requests to')
-      .action(generateOldestMessageReport)
+      .action(generateOldestMessageReport);
 }

@@ -1,5 +1,10 @@
 {
 
-   "extends": "@silvermine/eslint-config/node"
+   "extends": "@silvermine/eslint-config/node",
+
+   "rules": {
+      "no-console": [ "error", { "allow": [ "debug", "info", "warn", "error", "table" ] } ],
+      "no-process-exit": "off"
+   }
 
 }
