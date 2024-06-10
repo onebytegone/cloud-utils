@@ -23,10 +23,10 @@
       "@silvermine/standardization": "2.2.0",
       "@silvermine/toolbox": "0.2.0",
       "@silvermine/typescript-config": "1.0.0",
-      "@types/luxon": "3.3.3",
+      "@types/luxon": "3.4.2",
       "chalk": "4.1.2",
       "commander": "11.1.0",
-      "luxon": "3.4.3",
+      "luxon": "3.4.4",
       "p-queue": "6.6.2",
       "table": "6.8.1",
       "ts-node": "10.9.1"
