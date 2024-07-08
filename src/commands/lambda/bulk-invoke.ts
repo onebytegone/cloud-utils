@@ -3,10 +3,9 @@ import { Command, Option } from 'commander';
 import PQueue from 'p-queue';
 import { generateDefaultOutputFilename } from '../../../lib/generate-default-output-filename';
 import createWriteStream from '../../../lib/create-write-stream';
-import { createReadStream } from 'fs';
-import readline from 'readline';
 import { invokeLambdaFunction } from '../../../lib/aws/invoke-lambda-function';
 import chalk from 'chalk';
+import { streamLinesFromFile } from '../../../lib/stream-lines-from-file';
 
 interface CommandOptions {
    name: string;
@@ -19,17 +18,6 @@ interface CommandOptions {
 }
 
 const lambda = new LambdaClient({});
-
-async function* streamLinesFromFile(file: string): AsyncIterable<string[]> {
-   const rl = readline.createInterface({
-      input: createReadStream(file),
-      crlfDelay: Infinity,
-   });
-
-   for await (const line of rl) {
-      yield [ line ]; // eslint-disable-line no-restricted-syntax
-   }
-}
 
 async function bulkInvokeLambdaFunction(this: Command, opts: CommandOptions): Promise<void> {
    const queue = new PQueue({ concurrency: opts.concurrency }),
