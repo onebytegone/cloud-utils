@@ -2,7 +2,19 @@
 
 ## What?
 
-A collection of misc utils I've found helpful working with AWS resources.
+A collection of misc utils for working with AWS resources.
+
+## Usage
+
+```bash
+cloud-utils
+```
+
+### Install/Upgrade
+
+```bash
+npm i -g 'git@github.com:onebytegone/cloud-utils.git'
+```
 
 ## License
 
