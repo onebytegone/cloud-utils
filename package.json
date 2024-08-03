@@ -27,7 +27,7 @@
       "@types/uuid": "10.0.0",
       "chalk": "4.1.2",
       "commander": "12.1.0",
-      "luxon": "3.4.4",
+      "luxon": "3.5.0",
       "p-queue": "6.6.2",
       "table": "6.8.2",
       "ts-node": "10.9.2",
