@@ -14,7 +14,7 @@ import { DateTime } from 'luxon';
 import { generateDefaultOutputFilename } from '../../../lib/generate-default-output-filename';
 import createWriteStream from '../../../lib/create-write-stream';
 
-const sfn = new SFNClient({});
+const sfn = new SFNClient({ maxAttempts: 20 });
 
 interface CommandOptions {
    name: string;
