@@ -2,13 +2,14 @@ import { GetQueueAttributesCommand, ListQueuesCommand, SQSClient } from '@aws-sd
 import { Command } from 'commander';
 import { quitWithError } from '../../../lib/quit-with-error';
 import { CloudWatchClient, GetMetricStatisticsCommand } from '@aws-sdk/client-cloudwatch';
-import { isEmpty, isUndefined } from '@silvermine/toolbox';
+import { isEmpty, isNotNullOrUndefined, isUndefined } from '@silvermine/toolbox';
 import { Duration } from 'luxon';
 import chalk from 'chalk';
 import { table } from 'table';
 
 interface CommandOptions {
    region?: string;
+   ignoreEmpty: boolean;
 }
 
 async function generateOldestMessageReport(this: Command, opts: CommandOptions): Promise<void> {
@@ -86,6 +87,10 @@ async function generateOldestMessageReport(this: Command, opts: CommandOptions):
    });
 
    const rows = records.map((record) => {
+      if (opts.ignoreEmpty && record.messages === 0) {
+         return undefined;
+      }
+
       if (isUndefined(record.secondsToLoss)) {
          return [
             chalk.grey(record.queue),
@@ -117,7 +122,7 @@ async function generateOldestMessageReport(this: Command, opts: CommandOptions):
 
    console.info(table([
       [ chalk.bold('Queue'), chalk.bold('Messages'), chalk.bold('Time to message loss') ],
-      ...rows,
+      ...rows.filter(isNotNullOrUndefined),
    ]));
 }
 
@@ -125,5 +130,6 @@ export default function register(command: Command): void {
    command
       .description('Generates a report of which SQS queues have messages nearing expiration')
       .option('--region <value>', 'Region to send requests to')
+      .option('--ignore-empty', 'Do not log queues that do not contain messages')
       .action(generateOldestMessageReport);
 }
