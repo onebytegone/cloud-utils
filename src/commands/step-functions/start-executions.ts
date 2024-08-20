@@ -1,9 +1,9 @@
 import { Command, Option } from 'commander';
 import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
-import { getStateMachineARN } from '../../../lib/aws/get-state-machine-arn';
-import { quitWithError } from '../../../lib/quit-with-error';
+import { getStateMachineARN } from '../../lib/aws/get-state-machine-arn';
+import { quitWithError } from '../../lib/quit-with-error';
 import PQueue from 'p-queue';
-import { streamLinesFromFile } from '../../../lib/stream-lines-from-file';
+import { streamLinesFromFile } from '../../lib/stream-lines-from-file';
 import { v4 as uuidv4 } from 'uuid';
 
 const sfn = new SFNClient({}),
@@ -39,17 +39,15 @@ async function startStepFunctionsWorkflowExecutions(this: Command, opts: Command
       quitWithError(`Could not find a state machine with the name "${opts.name}"`);
    }
 
-   for await (const inputs of streamLinesFromFile(opts.inputsFile)) {
-      inputs.forEach((inputLine) => {
-         queue.add(async () => {
-            const { name, input } = parseInputLine(inputLine, opts.appendRandomSuffix),
-                  resp = await sfn.send(new StartExecutionCommand({ stateMachineArn, input, name }));
+   for await (const inputLine of streamLinesFromFile(opts.inputsFile)) {
+      queue.add(async () => {
+         const { name, input } = parseInputLine(inputLine, opts.appendRandomSuffix),
+               resp = await sfn.send(new StartExecutionCommand({ stateMachineArn, input, name }));
 
-            console.info(JSON.stringify({
-               input,
-               execution: resp.executionArn,
-            }));
-         });
+         console.info(JSON.stringify({
+            input,
+            execution: resp.executionArn,
+         }));
       });
 
       if (queue.size > maxQueueSize) {

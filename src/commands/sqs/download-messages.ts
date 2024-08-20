@@ -1,8 +1,8 @@
 import { DeleteMessageBatchCommand, GetQueueUrlCommand, ReceiveMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { Command, Option } from 'commander';
-import { quitWithError } from '../../../lib/quit-with-error';
-import { generateDefaultOutputFilename } from '../../../lib/generate-default-output-filename';
-import createWriteStream from '../../../lib/create-write-stream';
+import { quitWithError } from '../../lib/quit-with-error';
+import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename';
+import createWriteStream from '../../lib/create-write-stream';
 import { delay } from '@silvermine/toolbox';
 
 const sqs = new SQSClient({});

@@ -1,6 +1,6 @@
 import { GetQueueAttributesCommand, ListQueuesCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { Command } from 'commander';
-import { quitWithError } from '../../../lib/quit-with-error';
+import { quitWithError } from '../../lib/quit-with-error';
 import { CloudWatchClient, GetMetricStatisticsCommand } from '@aws-sdk/client-cloudwatch';
 import { isEmpty, isNotNullOrUndefined, isUndefined } from '@silvermine/toolbox';
 import { Duration } from 'luxon';
