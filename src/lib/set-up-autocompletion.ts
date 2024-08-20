@@ -40,7 +40,7 @@ export default function setUpAutocompletion(program: Command): void {
 
    completion.init();
 
-   if (process.argv.indexOf('--install-autocompletion')) {
+   if (process.argv.includes('--install-autocompletion')) {
       completion.setupShellInitFile();
    }
 }
