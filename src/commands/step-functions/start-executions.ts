@@ -39,17 +39,15 @@ async function startStepFunctionsWorkflowExecutions(this: Command, opts: Command
       quitWithError(`Could not find a state machine with the name "${opts.name}"`);
    }
 
-   for await (const inputs of streamLinesFromFile(opts.inputsFile)) {
-      inputs.forEach((inputLine) => {
-         queue.add(async () => {
-            const { name, input } = parseInputLine(inputLine, opts.appendRandomSuffix),
-                  resp = await sfn.send(new StartExecutionCommand({ stateMachineArn, input, name }));
+   for await (const inputLine of streamLinesFromFile(opts.inputsFile)) {
+      queue.add(async () => {
+         const { name, input } = parseInputLine(inputLine, opts.appendRandomSuffix),
+               resp = await sfn.send(new StartExecutionCommand({ stateMachineArn, input, name }));
 
-            console.info(JSON.stringify({
-               input,
-               execution: resp.executionArn,
-            }));
-         });
+         console.info(JSON.stringify({
+            input,
+            execution: resp.executionArn,
+         }));
       });
 
       if (queue.size > maxQueueSize) {

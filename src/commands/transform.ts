@@ -51,10 +51,8 @@ async function performTransformation(this: Command, opts: CommandOptions): Promi
    const outputWriter = await createOutputWriter(opts.output),
          transformationFn = getTransformationFn(opts.transformation);
 
-   for await (const lines of streamLinesFromFile(opts.input)) {
-      lines.forEach((line) => {
-         outputWriter.write(JSON.stringify(transformationFn(JSON.parse(line))));
-      });
+   for await (const line of streamLinesFromFile(opts.input)) {
+      outputWriter.write(JSON.stringify(transformationFn(JSON.parse(line))));
    }
 
    outputWriter.close();

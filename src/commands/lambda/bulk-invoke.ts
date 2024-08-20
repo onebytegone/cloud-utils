@@ -34,44 +34,42 @@ async function bulkInvokeLambdaFunction(this: Command, opts: CommandOptions): Pr
    console.info(`${chalk.gray('Successful output:')} ${successfulInvocationsFile}`);
    console.info(`${chalk.gray('Failed output:')} ${failedInvocationsFile}`);
 
-   for await (const payloads of streamLinesFromFile(opts.payloadsFile)) {
-      payloads.forEach((payload) => {
-         queue.add(async () => {
-            const resp = await invokeLambdaFunction(lambda, {
-               name: opts.name,
-               invocationType: opts.invocationType,
-               payload,
-            });
-
-            let responsePayload = resp.responsePayload;
-
-            if (opts.jsonDecode && responsePayload) {
-               try {
-                  responsePayload = JSON.parse(responsePayload);
-               } catch(e) {
-                  // noop
-               }
-            }
-
-            if (resp.error) {
-               counters.failed += 1;
-               failedPayloadsWriteStream.write(JSON.stringify({
-                  payload,
-                  error: resp.error,
-                  responsePayload,
-               }) + '\n');
-            } else {
-               counters.successful += 1;
-               successfulInvocationsWriteStream.write(JSON.stringify({
-                  payload,
-                  responsePayload,
-               }) + '\n');
-            }
-
-            if ((counters.successful + counters.failed) % 10 === 0) {
-               console.info(chalk.gray(`Status: ${counters.successful} successful / ${counters.failed} failed`));
-            }
+   for await (const payload of streamLinesFromFile(opts.payloadsFile)) {
+      queue.add(async () => {
+         const resp = await invokeLambdaFunction(lambda, {
+            name: opts.name,
+            invocationType: opts.invocationType,
+            payload,
          });
+
+         let responsePayload = resp.responsePayload;
+
+         if (opts.jsonDecode && responsePayload) {
+            try {
+               responsePayload = JSON.parse(responsePayload);
+            } catch(e) {
+               // noop
+            }
+         }
+
+         if (resp.error) {
+            counters.failed += 1;
+            failedPayloadsWriteStream.write(JSON.stringify({
+               payload,
+               error: resp.error,
+               responsePayload,
+            }) + '\n');
+         } else {
+            counters.successful += 1;
+            successfulInvocationsWriteStream.write(JSON.stringify({
+               payload,
+               responsePayload,
+            }) + '\n');
+         }
+
+         if ((counters.successful + counters.failed) % 10 === 0) {
+            console.info(chalk.gray(`Status: ${counters.successful} successful / ${counters.failed} failed`));
+         }
       });
 
       if (queue.size > maxQueueSize) {
