@@ -29,6 +29,7 @@
       "chalk": "4.1.2",
       "commander": "12.1.0",
       "luxon": "3.5.0",
+      "omelette": "0.4.17",
       "p-queue": "6.6.2",
       "table": "6.8.2",
       "ts-node": "10.9.2",
@@ -36,6 +37,7 @@
    },
    "devDependencies": {
       "@silvermine/eslint-config": "3.2.0",
-      "@silvermine/standardization": "2.2.3"
+      "@silvermine/standardization": "2.2.3",
+      "@types/omelette": "0.4.4"
    }
 }
