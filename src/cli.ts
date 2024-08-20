@@ -6,6 +6,7 @@ import registerSQSDownloadMessages from './commands/sqs/download-messages';
 import registerSQSOldestMessageReport from './commands/sqs/oldest-message-report';
 import registerStepFunctionsListExecutions from './commands/step-functions/list-executions';
 import registerStepFunctionsStartExecutions from './commands/step-functions/start-executions';
+import registerTransform from './commands/transform';
 
 const program = new Command();
 
@@ -29,5 +30,7 @@ const sfn = program.command('sfn') // Step Functions
 
 registerStepFunctionsListExecutions(sfn.command('list-executions'));
 registerStepFunctionsStartExecutions(sfn.command('start-executions'));
+
+registerTransform(program.command('transform'));
 
 program.parse();
