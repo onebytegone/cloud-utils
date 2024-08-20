@@ -7,7 +7,7 @@ import registerSQSOldestMessageReport from './commands/sqs/oldest-message-report
 import registerStepFunctionsListExecutions from './commands/step-functions/list-executions';
 import registerStepFunctionsStartExecutions from './commands/step-functions/start-executions';
 import registerTransform from './commands/transform';
-import setUpAutocompletion from '../lib/set-up-autocompletion';
+import setUpAutocompletion from './lib/set-up-autocompletion';
 
 const program = new Command();
 

@@ -1,7 +1,7 @@
 import { Command } from 'commander';
-import createWriteStream from '../../lib/create-write-stream';
-import { streamLinesFromFile } from '../../lib/stream-lines-from-file';
-import { extractEventBridgeEventFromSQSMessage } from '../../lib/transformers/sqs-to-eventbridge';
+import createWriteStream from '../lib/create-write-stream';
+import { streamLinesFromFile } from '../lib/stream-lines-from-file';
+import { extractEventBridgeEventFromSQSMessage } from '../lib/transformers/sqs-to-eventbridge';
 import { isUndefined } from '@silvermine/toolbox';
 
 interface CommandOptions {

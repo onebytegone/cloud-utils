@@ -1,9 +1,9 @@
 import { Command, Option } from 'commander';
 import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
-import { getStateMachineARN } from '../../../lib/aws/get-state-machine-arn';
-import { quitWithError } from '../../../lib/quit-with-error';
+import { getStateMachineARN } from '../../lib/aws/get-state-machine-arn';
+import { quitWithError } from '../../lib/quit-with-error';
 import PQueue from 'p-queue';
-import { streamLinesFromFile } from '../../../lib/stream-lines-from-file';
+import { streamLinesFromFile } from '../../lib/stream-lines-from-file';
 import { v4 as uuidv4 } from 'uuid';
 
 const sfn = new SFNClient({}),

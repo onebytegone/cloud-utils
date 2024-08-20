@@ -8,11 +8,11 @@ import {
    paginateListExecutions,
    SFNClient,
 } from '@aws-sdk/client-sfn';
-import { getStateMachineARN } from '../../../lib/aws/get-state-machine-arn';
-import { quitWithError } from '../../../lib/quit-with-error';
+import { getStateMachineARN } from '../../lib/aws/get-state-machine-arn';
+import { quitWithError } from '../../lib/quit-with-error';
 import { DateTime } from 'luxon';
-import { generateDefaultOutputFilename } from '../../../lib/generate-default-output-filename';
-import createWriteStream from '../../../lib/create-write-stream';
+import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename';
+import createWriteStream from '../../lib/create-write-stream';
 
 const sfn = new SFNClient({ maxAttempts: 20 });
 

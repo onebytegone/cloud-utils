@@ -1,11 +1,11 @@
 import { InvocationType, LambdaClient } from '@aws-sdk/client-lambda';
 import { Command, Option } from 'commander';
 import PQueue from 'p-queue';
-import { generateDefaultOutputFilename } from '../../../lib/generate-default-output-filename';
-import createWriteStream from '../../../lib/create-write-stream';
-import { invokeLambdaFunction } from '../../../lib/aws/invoke-lambda-function';
+import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename';
+import createWriteStream from '../../lib/create-write-stream';
+import { invokeLambdaFunction } from '../../lib/aws/invoke-lambda-function';
 import chalk from 'chalk';
-import { streamLinesFromFile } from '../../../lib/stream-lines-from-file';
+import { streamLinesFromFile } from '../../lib/stream-lines-from-file';
 
 interface CommandOptions {
    name: string;

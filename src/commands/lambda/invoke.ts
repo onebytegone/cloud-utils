@@ -1,6 +1,6 @@
 import { Command, Option } from 'commander';
 import { InvocationType, Lambda } from '@aws-sdk/client-lambda';
-import { invokeLambdaFunction } from '../../../lib/aws/invoke-lambda-function';
+import { invokeLambdaFunction } from '../../lib/aws/invoke-lambda-function';
 
 const lambda = new Lambda({});
 
