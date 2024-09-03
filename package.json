@@ -22,7 +22,7 @@
       "@aws-sdk/client-lambda": "3.621.0",
       "@aws-sdk/client-sfn": "3.621.0",
       "@aws-sdk/client-sqs": "3.621.0",
-      "@silvermine/toolbox": "0.3.0",
+      "@silvermine/toolbox": "0.4.0",
       "@silvermine/typescript-config": "1.0.0",
       "@types/aws-lambda": "8.10.143",
       "@types/luxon": "3.4.2",
