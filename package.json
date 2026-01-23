@@ -19,6 +19,7 @@
    "license": "MIT",
    "dependencies": {
       "@aws-sdk/client-cloudwatch": "3.731.1",
+      "@aws-sdk/client-cloudwatch-logs": "3.974.0",
       "@aws-sdk/client-lambda": "3.731.1",
       "@aws-sdk/client-sfn": "3.731.1",
       "@aws-sdk/client-sqs": "3.731.1",
