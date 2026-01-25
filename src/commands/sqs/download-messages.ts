@@ -5,16 +5,17 @@ import { generateDefaultOutputFilename } from '../../lib/generate-default-output
 import createWriteStream from '../../lib/create-write-stream';
 import { delay } from '@silvermine/toolbox';
 
-const sqs = new SQSClient({});
-
 interface CommandOptions {
    name: string;
    delete: boolean;
    concurrency: number;
    output?: string;
+   region?: string;
 }
 
 async function downloadMessages(this: Command, opts: CommandOptions): Promise<void> {
+   const sqs = new SQSClient({ region: opts.region });
+
    const queueURL = (await sqs.send(new GetQueueUrlCommand({ QueueName: opts.name }))).QueueUrl;
 
    if (!queueURL) {
@@ -97,6 +98,7 @@ export default function register(command: Command): void {
       )
       .requiredOption('--name <string>', 'Name of the SQS queue')
       .option('-o, --output <string>', 'Name of the file to write the messages')
+      .option('--region <value>', 'Region to send requests to')
       .addOption(
          new Option('--delete', 'If supplied, the messages will be DELETED from the queue')
             .default(false)

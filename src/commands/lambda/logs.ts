@@ -13,6 +13,7 @@ interface CommandOptions {
    minutes: number;
    filter?: string;
    live: boolean;
+   region?: string;
 }
 
 interface LogQueryParams {
@@ -233,7 +234,7 @@ async function getLambdaLogs(this: Command, opts: CommandOptions): Promise<void>
    validateFunctionName(opts.name);
    validateMinutes(opts.minutes);
 
-   const client = new CloudWatchLogsClient({});
+   const client = new CloudWatchLogsClient({ region: opts.region });
 
    if (opts.live) {
       await startLiveTail({
@@ -285,6 +286,7 @@ export default function register(command: Command): void {
       )
       .option('--filter <string>', 'text pattern to filter log messages')
       .option('--live', 'enable live tail mode', false)
+      .option('--region <value>', 'Region to send requests to')
       .action(getLambdaLogs);
    /* eslint-enable @silvermine/silvermine/call-indentation */
 }

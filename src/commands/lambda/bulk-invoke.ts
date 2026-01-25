@@ -15,12 +15,12 @@ interface CommandOptions {
    jsonDecode: boolean;
    invocationType: InvocationType;
    concurrency: number;
+   region?: string;
 }
 
-const lambda = new LambdaClient({});
-
 async function bulkInvokeLambdaFunction(this: Command, opts: CommandOptions): Promise<void> {
-   const queue = new PQueue({ concurrency: opts.concurrency }),
+   const lambda = new LambdaClient({ region: opts.region }),
+         queue = new PQueue({ concurrency: opts.concurrency }),
          maxQueueSize = opts.concurrency * 5,
          failedInvocationsFile = opts.failed || generateDefaultOutputFilename('lambda', 'bulk-invoke', opts.name, 'failed'),
          successfulInvocationsFile = opts.successful || generateDefaultOutputFilename('lambda', 'bulk-invoke', opts.name, 'successful'),
@@ -110,6 +110,7 @@ export default function register(command: Command): void {
             })
             .default(10)
       )
+      .option('--region <value>', 'Region to send requests to')
       .action(bulkInvokeLambdaFunction);
    /* eslint-enable @silvermine/silvermine/call-indentation */
 }

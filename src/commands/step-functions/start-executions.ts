@@ -6,14 +6,14 @@ import PQueue from 'p-queue';
 import { streamLinesFromFile } from '../../lib/stream-lines-from-file';
 import { v4 as uuidv4 } from 'uuid';
 
-const sfn = new SFNClient({}),
-      NAMED_INPUT_PATTERN = /([0-9A-Za-z-_]{1,80})[\t ]({.*})$/;
+const NAMED_INPUT_PATTERN = /([0-9A-Za-z-_]{1,80})[\t ]({.*})$/;
 
 interface CommandOptions {
    name: string;
    inputsFile: string;
    concurrency: number;
    appendRandomSuffix: boolean;
+   region?: string;
 }
 
 function parseInputLine(inputLine: string, appendRandomSuffix: boolean): { name?: string; input: string } {
@@ -31,7 +31,8 @@ function parseInputLine(inputLine: string, appendRandomSuffix: boolean): { name?
 }
 
 async function startStepFunctionsWorkflowExecutions(this: Command, opts: CommandOptions): Promise<void> {
-   const queue = new PQueue({ concurrency: opts.concurrency }),
+   const sfn = new SFNClient({ region: opts.region }),
+         queue = new PQueue({ concurrency: opts.concurrency }),
          maxQueueSize = opts.concurrency * 5,
          stateMachineArn = await getStateMachineARN(sfn, opts.name);
 
@@ -77,6 +78,7 @@ export default function register(command: Command): void {
             .default(10)
       )
       .option('--no-append-random-suffix', 'don\'t append an 8 character random suffix to provided execution names')
+      .option('--region <value>', 'Region to send requests to')
       .action(startStepFunctionsWorkflowExecutions);
    /* eslint-enable @silvermine/silvermine/call-indentation */
 }
