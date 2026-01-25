@@ -14,8 +14,6 @@ import { DateTime } from 'luxon';
 import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename';
 import createWriteStream from '../../lib/create-write-stream';
 
-const sfn = new SFNClient({ maxAttempts: 20 });
-
 interface CommandOptions {
    name: string;
    output?: string;
@@ -24,9 +22,12 @@ interface CommandOptions {
    maxExecutions?: number;
    history?: 'head' | 'reverse';
    maxEvents?: number;
+   region?: string;
 }
 
 async function listExecutions(this: Command, opts: CommandOptions): Promise<void> {
+   const sfn = new SFNClient({ region: opts.region, maxAttempts: 20 });
+
    const stateMachineArn = await getStateMachineARN(sfn, opts.name);
 
    if (!stateMachineArn) {
@@ -119,6 +120,7 @@ export default function register(command: Command): void {
             })
             .implies({ history: 'head' })
       )
+      .option('--region <value>', 'Region to send requests to')
       .action(listExecutions);
    /* eslint-enable @silvermine/silvermine/call-indentation */
 }
