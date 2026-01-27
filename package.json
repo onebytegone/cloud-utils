@@ -25,7 +25,7 @@
       "@aws-sdk/client-sqs": "3.731.1",
       "@silvermine/toolbox": "0.4.0",
       "@silvermine/typescript-config": "1.0.0",
-      "@types/aws-lambda": "8.10.143",
+      "@types/aws-lambda": "8.10.160",
       "@types/luxon": "3.4.2",
       "@types/uuid": "10.0.0",
       "chalk": "4.1.2",
