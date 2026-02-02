@@ -40,6 +40,6 @@
    "devDependencies": {
       "@silvermine/eslint-config": "3.2.1",
       "@silvermine/standardization": "2.2.3",
-      "@types/omelette": "0.4.4"
+      "@types/omelette": "0.4.5"
    }
 }
