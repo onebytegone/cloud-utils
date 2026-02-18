@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { version } from '../package.json';
+import registerDynDBBulkDelete from './commands/dynamodb/bulk-delete';
 import registerLambdaBulkInvoke from './commands/lambda/bulk-invoke';
 import registerLambdaInvoke from './commands/lambda/invoke';
 import registerLambdaLogs from './commands/lambda/logs';
@@ -14,6 +15,11 @@ const program = new Command();
 
 program.name('cloud-utils');
 program.version(version);
+
+const dynamodb = program.command('dynamodb')
+   .description('Commands related to Amazon DynamoDB');
+
+registerDynDBBulkDelete(dynamodb.command('bulk-delete'));
 
 const lambda = program.command('lambda')
    .description('Commands related to AWS Lambda');
