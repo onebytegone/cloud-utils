@@ -6,6 +6,7 @@ import registerLambdaInvoke from './commands/lambda/invoke';
 import registerLambdaLogs from './commands/lambda/logs';
 import registerSQSDownloadMessages from './commands/sqs/download-messages';
 import registerSQSOldestMessageReport from './commands/sqs/oldest-message-report';
+import registerSQSSendMessages from './commands/sqs/send-messages';
 import registerStepFunctionsListExecutions from './commands/step-functions/list-executions';
 import registerStepFunctionsStartExecutions from './commands/step-functions/start-executions';
 import registerTransform from './commands/transform';
@@ -33,6 +34,7 @@ const sqs = program.command('sqs')
 
 registerSQSDownloadMessages(sqs.command('download-messages'));
 registerSQSOldestMessageReport(sqs.command('oldest-message-report'));
+registerSQSSendMessages(sqs.command('send-messages'));
 
 const sfn = program.command('sfn') // Step Functions
    .description('Commands related to AWS Step Functions');
