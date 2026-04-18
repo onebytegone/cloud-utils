@@ -12,6 +12,7 @@ import { DateTime } from 'luxon';
 import { getStateMachineARN } from '../../lib/aws/get-state-machine-arn.js';
 import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename.js';
 import createWriteStream from '../../lib/create-write-stream.js';
+import endWriteStream from '../../lib/end-write-stream.js';
 import { BaseCommand } from '../../base-command.js';
 
 export default class ListExecutions extends BaseCommand {
@@ -85,7 +86,7 @@ export default class ListExecutions extends BaseCommand {
       for await (const listResp of paginateListExecutions({ client: sfn }, listParams)) {
          for (const execution of listResp.executions || []) {
             if (startedAfter && execution.startDate && execution.startDate < startedAfter.toJSDate()) {
-               writeStream.end();
+               await endWriteStream(writeStream);
                return;
             }
 
@@ -116,13 +117,13 @@ export default class ListExecutions extends BaseCommand {
             }) + '\n');
 
             if (flags['max-executions'] && foundExecutions >= flags['max-executions']) {
-               writeStream.end();
+               await endWriteStream(writeStream);
                return;
             }
          }
       }
 
-      writeStream.end();
+      await endWriteStream(writeStream);
    }
 
 }

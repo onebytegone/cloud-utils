@@ -14,6 +14,7 @@ import { streamRecordsFromFile } from '../../lib/stream-records-from-file.js';
 import { batchRecords } from '../../lib/batch-records.js';
 import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename.js';
 import createWriteStream from '../../lib/create-write-stream.js';
+import endWriteStream from '../../lib/end-write-stream.js';
 import { BaseCommand } from '../../base-command.js';
 
 const BATCH_SIZE = 25,
@@ -184,7 +185,7 @@ export default class BulkDelete extends BaseCommand {
 
       await queue.onIdle();
 
-      failedWriteStream.end();
+      await endWriteStream(failedWriteStream);
 
       this.log(chalk.whiteBright(
          `Total: ${counters.deleted + counters.failed} records (${counters.deleted} deleted / ${counters.failed} failed)`

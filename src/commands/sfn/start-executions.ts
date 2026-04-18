@@ -7,6 +7,7 @@ import { getStateMachineARN } from '../../lib/aws/get-state-machine-arn.js';
 import { streamLinesFromFile } from '../../lib/stream-lines-from-file.js';
 import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename.js';
 import createWriteStream from '../../lib/create-write-stream.js';
+import endWriteStream from '../../lib/end-write-stream.js';
 import { BaseCommand } from '../../base-command.js';
 
 const NAMED_INPUT_PATTERN = /([0-9A-Za-z-_]{1,80})[\t ]({.*})$/;
@@ -98,7 +99,7 @@ export default class StartExecutions extends BaseCommand {
 
       await queue.onIdle();
 
-      failedWriteStream.end();
+      await endWriteStream(failedWriteStream);
 
       this.log(chalk.whiteBright(
          `Total: ${counters.started + counters.failed} executions (${counters.started} started / ${counters.failed} failed)`

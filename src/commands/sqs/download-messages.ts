@@ -2,6 +2,7 @@ import { DeleteMessageBatchCommand, GetQueueUrlCommand, ReceiveMessageCommand, S
 import { Flags } from '@oclif/core';
 import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename.js';
 import createWriteStream from '../../lib/create-write-stream.js';
+import endWriteStream from '../../lib/end-write-stream.js';
 import { delay } from '@silvermine/toolbox';
 import { BaseCommand } from '../../base-command.js';
 
@@ -106,7 +107,7 @@ export default class DownloadMessages extends BaseCommand {
 
       this.log(`Downloaded ${counts.reduce((memo, v) => { return memo + v; }, 0)} messages`);
 
-      writeStream.end();
+      await endWriteStream(writeStream);
    }
 
 }

@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { Flags } from '@oclif/core';
 import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename.js';
 import createWriteStream from '../../lib/create-write-stream.js';
+import endWriteStream from '../../lib/end-write-stream.js';
 import { invokeLambdaFunction } from '../../lib/aws/invoke-lambda-function.js';
 import { streamLinesFromFile } from '../../lib/stream-lines-from-file.js';
 import { BaseCommand } from '../../base-command.js';
@@ -123,8 +124,10 @@ export default class BulkInvoke extends BaseCommand {
 
       await queue.onIdle();
 
-      successfulInvocationsWriteStream.end();
-      failedPayloadsWriteStream.end();
+      await Promise.all([
+         endWriteStream(successfulInvocationsWriteStream),
+         endWriteStream(failedPayloadsWriteStream),
+      ]);
 
       this.log(chalk.whiteBright(
          `Total: ${counters.successful + counters.failed} invocations (${counters.successful} successful / ${counters.failed} failed)`
