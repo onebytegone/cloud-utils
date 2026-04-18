@@ -1,3 +1,12 @@
 {
-   "extends": "./node_modules/@silvermine/typescript-config/tsconfig.json"
+   "extends": "./node_modules/@silvermine/typescript-config/tsconfig.json",
+   "compilerOptions": {
+      "target": "es2022",
+      "lib": [ "es2022" ],
+      "module": "node16",
+      "moduleResolution": "node16"
+   },
+   "include": [
+      "src/**/*.ts"
+   ]
 }

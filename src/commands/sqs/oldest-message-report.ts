@@ -1,146 +1,141 @@
 import { GetQueueAttributesCommand, ListQueuesCommand, SQSClient } from '@aws-sdk/client-sqs';
-import { Command } from 'commander';
-import { quitWithError } from '../../lib/quit-with-error';
 import { CloudWatchClient, GetMetricStatisticsCommand } from '@aws-sdk/client-cloudwatch';
 import { isEmpty, isNotNullOrUndefined, isUndefined } from '@silvermine/toolbox';
 import { Duration } from 'luxon';
 import chalk from 'chalk';
 import { table } from 'table';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../../base-command.js';
 
 const SEVEN_DAYS_IN_SECONDS = 7 * 24 * 60 * 60,
       THREE_DAYS_IN_SECONDS = 3 * 24 * 60 * 60;
 
-interface CommandOptions {
-   region?: string;
-   ignoreEmpty: boolean;
-}
+export default class OldestMessageReport extends BaseCommand {
 
-async function generateOldestMessageReport(this: Command, opts: CommandOptions): Promise<void> {
-   const sqs = new SQSClient({ region: opts.region }),
-         cw = new CloudWatchClient({ region: opts.region }),
-         listResp = await sqs.send(new ListQueuesCommand({}));
+   public static summary = 'Report which SQS queues have messages nearing expiration';
 
-   if (listResp.NextToken) {
-      quitWithError('ERROR: pagination is not supported');
-   }
+   public static flags = {
+      'ignore-empty': Flags.boolean({
+         description: 'Do not log queues that do not contain messages',
+      }),
+   };
 
-   const records: { queue: string; messages: number; secondsToLoss?: number }[] = [];
+   public async run(): Promise<void> {
+      const { flags } = await this.parse(OldestMessageReport),
+            sqs = new SQSClient({ region: flags.region }),
+            cw = new CloudWatchClient({ region: flags.region }),
+            listResp = await sqs.send(new ListQueuesCommand({}));
 
-   for (const queueURL of (listResp.QueueUrls || [])) {
-      const attrResp = await sqs.send(new GetQueueAttributesCommand({
-         QueueUrl: queueURL,
-         AttributeNames: [
-            'ApproximateNumberOfMessages',
-            'MessageRetentionPeriod',
-            'QueueArn',
-         ],
-      }));
-
-      if (!attrResp.Attributes) {
-         console.warn(`Could not find queue ${queueURL}`);
-         continue;
+      if (listResp.NextToken) {
+         this.error('Pagination is not supported');
       }
 
-      const retentionSeconds = Number(attrResp.Attributes.MessageRetentionPeriod),
-            messages = Number(attrResp.Attributes.ApproximateNumberOfMessages),
-            queueName = (attrResp.Attributes.QueueArn || '').replace(/^.*:/, '');
+      const records: { queue: string; messages: number; secondsToLoss?: number }[] = [];
 
-      if (messages === 0) {
+      for (const queueURL of (listResp.QueueUrls || [])) {
+         const attrResp = await sqs.send(new GetQueueAttributesCommand({
+            QueueUrl: queueURL,
+            AttributeNames: [
+               'ApproximateNumberOfMessages',
+               'MessageRetentionPeriod',
+               'QueueArn',
+            ],
+         }));
+
+         if (!attrResp.Attributes) {
+            this.warn(`Could not find queue ${queueURL}`);
+            continue;
+         }
+
+         const retentionSeconds = Number(attrResp.Attributes.MessageRetentionPeriod),
+               messages = Number(attrResp.Attributes.ApproximateNumberOfMessages),
+               queueName = (attrResp.Attributes.QueueArn || '').replace(/^.*:/, '');
+
+         if (messages === 0) {
+            records.push({
+               queue: queueName,
+               messages,
+            });
+            continue;
+         }
+
+         const oldestMessageMetricResp = await cw.send(new GetMetricStatisticsCommand({
+            Namespace: 'AWS/SQS',
+            MetricName: 'ApproximateAgeOfOldestMessage',
+            Dimensions: [
+               { Name: 'QueueName', Value: queueName },
+            ],
+            Statistics: [
+               'Maximum',
+            ],
+            StartTime: new Date(Date.now() - (3 * 60 * 1000)),
+            EndTime: new Date(),
+            Period: 60,
+         }));
+
+         const datapoints = (oldestMessageMetricResp.Datapoints || [])
+            .sort((a, b) => {
+               return (b.Timestamp?.getTime() || 0) - (a.Timestamp?.getTime() || 0);
+            });
+
          records.push({
             queue: queueName,
             messages,
+            secondsToLoss: isEmpty(datapoints) ? undefined : retentionSeconds - (datapoints[0].Maximum || 0),
          });
-         continue;
       }
 
-      const oldestMessageMetricResp = await cw.send(new GetMetricStatisticsCommand({
-         Namespace: 'AWS/SQS',
-         MetricName: 'ApproximateAgeOfOldestMessage',
-         Dimensions: [
-            { Name: 'QueueName', Value: queueName },
-         ],
-         Statistics: [
-            'Maximum',
-         ],
-         StartTime: new Date(Date.now() - (3 * 60 * 1000)),
-         EndTime: new Date(),
-         Period: 60,
-      }));
+      records.sort((a, b) => {
+         if (a.secondsToLoss !== b.secondsToLoss) {
+            return (isUndefined(a.secondsToLoss) ? Number.MAX_SAFE_INTEGER : a.secondsToLoss)
+               - (isUndefined(b.secondsToLoss) ? Number.MAX_SAFE_INTEGER : b.secondsToLoss);
+         }
 
-      const datapoints = oldestMessageMetricResp.Datapoints || [];
+         if (a.messages !== b.messages) {
+            return b.messages - a.messages;
+         }
 
-      records.push({
-         queue: queueName,
-         messages,
-         secondsToLoss: isEmpty(datapoints) ? undefined : retentionSeconds - (datapoints[datapoints.length - 1].Maximum || 0),
+         return a.queue.localeCompare(b.queue);
       });
+
+      const rows = records.map((record) => {
+         if (flags['ignore-empty'] && record.messages === 0) {
+            return undefined;
+         }
+
+         if (isUndefined(record.secondsToLoss)) {
+            return [
+               chalk.gray(record.queue),
+               chalk.gray(record.messages),
+               chalk.gray('n/a'),
+            ];
+         }
+
+         const humanDuration = Duration.fromMillis(record.secondsToLoss * 1000)
+            .shiftTo('days', 'hours')
+            .toHuman({ maximumFractionDigits: 0 });
+
+         let color: keyof typeof chalk = 'white';
+
+         if (record.secondsToLoss < SEVEN_DAYS_IN_SECONDS) {
+            color = 'yellow';
+         }
+
+         if (record.secondsToLoss < THREE_DAYS_IN_SECONDS) {
+            color = 'red';
+         }
+
+         return [
+            chalk[color](record.queue),
+            chalk[color](record.messages),
+            chalk[color](`${humanDuration} (${record.secondsToLoss.toLocaleString()} seconds)`),
+         ];
+      });
+
+      this.log(table([
+         [ chalk.bold('Queue'), chalk.bold('Messages'), chalk.bold('Time to message loss') ],
+         ...rows.filter(isNotNullOrUndefined),
+      ]));
    }
 
-   records.sort((a, b) => {
-      if (a.secondsToLoss !== b.secondsToLoss) {
-         return (isUndefined(a.secondsToLoss) ? Number.MAX_SAFE_INTEGER : a.secondsToLoss)
-            - (isUndefined(b.secondsToLoss) ? Number.MAX_SAFE_INTEGER : b.secondsToLoss);
-      }
-
-      if (a.messages !== b.messages) {
-         return b.messages - a.messages;
-      }
-
-      return a.queue.localeCompare(b.queue);
-   });
-
-   const rows = records.map((record) => {
-      if (opts.ignoreEmpty && record.messages === 0) {
-         return undefined;
-      }
-
-      if (isUndefined(record.secondsToLoss)) {
-         return [
-            chalk.grey(record.queue),
-            chalk.grey(record.messages),
-            chalk.grey('n/a'),
-         ];
-      }
-
-      if (record.secondsToLoss < 0) {
-         return [
-            chalk.magenta(record.queue),
-            chalk.magenta(record.messages),
-            chalk.magenta('expired'),
-         ];
-      }
-
-      const humanDuration = Duration.fromMillis(record.secondsToLoss * 1000)
-         .shiftTo('days', 'hours')
-         .toHuman({ maximumFractionDigits: 0 });
-
-      let color: keyof typeof chalk = 'white';
-
-      if (record.secondsToLoss < SEVEN_DAYS_IN_SECONDS) {
-         color = 'yellow';
-      }
-
-      if (record.secondsToLoss < THREE_DAYS_IN_SECONDS) {
-         color = 'red';
-      }
-
-      return [
-         chalk[color](record.queue),
-         chalk[color](record.messages),
-         chalk[color](`${humanDuration} (${record.secondsToLoss.toLocaleString()} seconds)`),
-      ];
-   });
-
-   console.info(table([
-      [ chalk.bold('Queue'), chalk.bold('Messages'), chalk.bold('Time to message loss') ],
-      ...rows.filter(isNotNullOrUndefined),
-   ]));
-}
-
-export default function register(command: Command): void {
-   command
-      .description('Generates a report of which SQS queues have messages nearing expiration')
-      .option('--region <value>', 'Region to send requests to')
-      .option('--ignore-empty', 'Do not log queues that do not contain messages')
-      .action(generateOldestMessageReport);
 }

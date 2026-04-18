@@ -1,16 +1,11 @@
-import { Command } from 'commander';
-import createWriteStream, { endWriteStream } from '../lib/create-write-stream';
-import { streamLinesFromFile } from '../lib/stream-lines-from-file';
-import { extractEventBridgeEventFromSQSMessage } from '../lib/transformers/sqs-to-eventbridge';
+import { Flags } from '@oclif/core';
+import createWriteStream from '../lib/create-write-stream.js';
+import { streamLinesFromFile } from '../lib/stream-lines-from-file.js';
+import { extractEventBridgeEventFromSQSMessage } from '../lib/transformers/sqs-to-eventbridge.js';
 import { isUndefined } from '@silvermine/toolbox';
+import { BaseCommand } from '../base-command.js';
 
-interface CommandOptions {
-   input: string;
-   output?: string;
-   transformation: string;
-}
-
-const TRANSFORMATION_FUNCTIONS: Partial<Record<string, (input: any) => unknown>> = {
+const TRANSFORMATION_FUNCTIONS: Partial<Record<string, (input: unknown) => unknown>> = {
    'sqs-to-eventbridge-event': extractEventBridgeEventFromSQSMessage,
 };
 
@@ -18,16 +13,15 @@ function getTransformationFn(name: string): (input: unknown) => unknown {
    const fn = TRANSFORMATION_FUNCTIONS[name];
 
    if (isUndefined(fn)) {
-      console.error(
+      throw new Error(
          `Could not find transformation named "${name}". Available transformations: ${Object.keys(TRANSFORMATION_FUNCTIONS).join(', ')}`
       );
-      process.exit(1);
    }
 
    return fn;
 }
 
-async function createOutputWriter(outputFile?: string): Promise<{ write: (line: string) => void; end: () => Promise<void> }> {
+async function createOutputWriter(log: (msg: string) => void, outputFile?: string): Promise<{ write: (line: string) => void; end: () => void }> {
    if (outputFile) {
       const stream = await createWriteStream(outputFile);
 
@@ -36,35 +30,48 @@ async function createOutputWriter(outputFile?: string): Promise<{ write: (line: 
             stream.write(line + '\n');
          },
          end: () => {
-            return endWriteStream(stream);
+            stream.end();
          },
       };
    }
 
    return {
-      write: console.info,
-      end: () => {
-         return Promise.resolve();
-      },
+      write: log,
+      end: () => {}, // eslint-disable-line no-empty-function
    };
 }
 
-async function performTransformation(this: Command, opts: CommandOptions): Promise<void> {
-   const outputWriter = await createOutputWriter(opts.output),
-         transformationFn = getTransformationFn(opts.transformation);
+export default class Transform extends BaseCommand {
 
-   for await (const line of streamLinesFromFile(opts.input)) {
-      outputWriter.write(JSON.stringify(transformationFn(JSON.parse(line))));
+   public static summary = 'Transform input using a defined transformer';
+
+   public static flags = {
+      input: Flags.string({
+         char: 'i',
+         description: 'name of the file containing newline-delimited inputs',
+         required: true,
+      }),
+      transformation: Flags.string({
+         char: 't',
+         description: 'name of the transformation to apply',
+         required: true,
+      }),
+      output: Flags.string({
+         char: 'o',
+         description: 'name of the file to write the transformed outputs',
+      }),
+   };
+
+   public async run(): Promise<void> {
+      const { flags } = await this.parse(Transform),
+            outputWriter = await createOutputWriter(this.log.bind(this), flags.output),
+            transformationFn = getTransformationFn(flags.transformation);
+
+      for await (const line of streamLinesFromFile(flags.input)) {
+         outputWriter.write(JSON.stringify(transformationFn(JSON.parse(line))));
+      }
+
+      outputWriter.end();
    }
 
-   await outputWriter.end();
-}
-
-export default function register(command: Command): void {
-   command
-      .description('Transforms the provided input using the defined transformer')
-      .requiredOption('-i, --input <path>', 'name of the file containing newline-delimited inputs')
-      .requiredOption('-t, --transformation <name>', 'name of the transformation to apply')
-      .option('-o, --output <path>', 'name of the file to write the transformed outputs')
-      .action(performTransformation);
 }

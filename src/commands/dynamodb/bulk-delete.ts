@@ -5,30 +5,21 @@ import {
    WriteRequest,
 } from '@aws-sdk/client-dynamodb';
 import { marshall } from '@aws-sdk/util-dynamodb';
-import { Command, Option } from 'commander';
 import PQueue from 'p-queue';
 import chalk from 'chalk';
+import { Flags } from '@oclif/core';
 import { hasDefined, isStringUnknownMap } from '@silvermine/toolbox';
-import { streamRecordsFromFile } from '../../lib/stream-records-from-file';
-import { batchRecords } from '../../lib/batch-records';
-import { quitWithError } from '../../lib/quit-with-error';
+import { streamRecordsFromFile } from '../../lib/stream-records-from-file.js';
+import { batchRecords } from '../../lib/batch-records.js';
+import { BaseCommand } from '../../base-command.js';
 
 const BATCH_SIZE = 25,
       STATUS_INTERVAL = BATCH_SIZE * 10;
 
-interface CommandOptions {
-   name: string;
-   recordsFile: string;
-   ddbJsonMarshall: boolean;
-   keys?: string;
-   concurrency: number;
-   region?: string;
-}
-
 function pluckKeyFields(record: Record<string, unknown>, keys: string[]): Record<string, unknown> {
    return keys.reduce<Record<string, unknown>>((memo, key) => {
       if (!hasDefined(record, key)) {
-         quitWithError(`Key field "${key}" not found in record: ${JSON.stringify(record)}`);
+         throw new Error(`Key field "${key}" not found in record: ${JSON.stringify(record)}`);
       }
 
       memo[key] = record[key];
@@ -49,7 +40,7 @@ function buildWriteRequest(record: Record<string, unknown>, keys: string[] | und
 
    const key = Object.entries(keyRecord).reduce<Record<string, AttributeValue>>((memo, [ field, value ]) => {
       if (!isAttributeValue(value)) {
-         quitWithError(`Field "${field}" is not a valid DynamoDB AttributeValue: ${JSON.stringify(value)}`);
+         throw new Error(`Field "${field}" is not a valid DynamoDB AttributeValue: ${JSON.stringify(value)}`);
       }
 
       memo[field] = value;
@@ -59,12 +50,18 @@ function buildWriteRequest(record: Record<string, unknown>, keys: string[] | und
    return { DeleteRequest: { Key: key } };
 }
 
+interface SendBatchOptions {
+   queue: PQueue;
+   counters: { deleted: number; failed: number };
+   log: (msg: string) => void;
+   warn: (msg: string) => void;
+}
+
 async function sendBatch(
    client: DynamoDBClient,
    tableName: string,
    requests: WriteRequest[],
-   queue: PQueue,
-   counters: { deleted: number; failed: number }
+   opts: SendBatchOptions
 ): Promise<void> {
    let response;
 
@@ -73,69 +70,95 @@ async function sendBatch(
          RequestItems: { [tableName]: requests },
       }));
    } catch(e) {
-      counters.failed += requests.length;
-      console.error(chalk.red(`Batch failed: ${e instanceof Error ? e.message : String(e)}`));
+      opts.counters.failed += requests.length;
+      opts.warn(chalk.red(`Batch failed: ${e instanceof Error ? e.message : String(e)}`));
       return;
    }
 
    const unprocessed = response.UnprocessedItems?.[tableName];
 
    if (!unprocessed || unprocessed.length === 0) {
-      counters.deleted += requests.length;
+      opts.counters.deleted += requests.length;
    } else {
-      counters.deleted += requests.length - unprocessed.length;
-      queue.add(async () => { return sendBatch(client, tableName, unprocessed, queue, counters); });
+      opts.counters.deleted += requests.length - unprocessed.length;
+      opts.queue.add(async () => {
+         return sendBatch(client, tableName, unprocessed, opts);
+      });
    }
 
-   if ((counters.deleted + counters.failed) % STATUS_INTERVAL === 0) {
-      console.info(chalk.gray(`Status: ${counters.deleted} deleted / ${counters.failed} failed`));
+   if ((opts.counters.deleted + opts.counters.failed) % STATUS_INTERVAL === 0) {
+      opts.log(chalk.gray(`Status: ${opts.counters.deleted} deleted / ${opts.counters.failed} failed`));
    }
 }
 
-async function bulkDelete(this: Command, opts: CommandOptions): Promise<void> {
-   const client = new DynamoDBClient({ region: opts.region }),
-         queue = new PQueue({ concurrency: opts.concurrency }),
-         maxQueueSize = opts.concurrency * 5,
-         parsedKeys = opts.keys ? opts.keys.split(',').map((k) => { return k.trim(); }) : undefined,
-         counters = { deleted: 0, failed: 0 };
+export default class BulkDelete extends BaseCommand {
 
-   console.info(chalk.yellow(
-      `Starting bulk delete from ${opts.recordsFile} on table "${opts.name}" (concurrency: ${opts.concurrency})`
-   ));
+   public static summary = 'Delete records from a DynamoDB table';
 
-   for await (const records of batchRecords<Record<string, unknown>>(streamRecordsFromFile(opts.recordsFile), BATCH_SIZE)) {
-      const requests = records.map((record): WriteRequest => {
-         return buildWriteRequest(record, parsedKeys, opts.ddbJsonMarshall);
-      });
+   public static flags = {
+      name: Flags.string({
+         description: 'name of the table',
+         required: true,
+      }),
+      'records-file': Flags.string({
+         char: 'i',
+         description: 'path to the input file (.ndjson, .jsonl, .csv, or .tsv)',
+         required: true,
+      }),
+      keys: Flags.string({
+         description: 'comma-separated field names to use as the DynamoDB key (e.g. "pk,sk")',
+      }),
+      'ddb-json-marshall': Flags.boolean({
+         description: 'marshall the records into DynamoDB JSON',
+         default: true,
+         allowNo: true,
+      }),
+      concurrency: Flags.integer({
+         description: 'number of concurrent BatchWriteItem requests',
+         default: 10,
+      }),
+   };
 
-      queue.add(async () => { return sendBatch(client, opts.name, requests, queue, counters); });
+   public async run(): Promise<void> {
+      const { flags } = await this.parse(BulkDelete),
+            client = new DynamoDBClient({ region: flags.region }),
+            queue = new PQueue({ concurrency: flags.concurrency }),
+            maxQueueSize = flags.concurrency * 5,
+            parsedKeys = flags.keys ? flags.keys.split(',').map((k) => { return k.trim(); }) : undefined,
+            counters = { deleted: 0, failed: 0 };
 
-      if (queue.size > maxQueueSize) {
-         await queue.onEmpty();
+      const batchOpts: SendBatchOptions = {
+         queue,
+         counters,
+         log: this.log.bind(this),
+         warn: this.logToStderr.bind(this),
+      };
+
+      this.log(chalk.yellow(
+         `Starting bulk delete from ${flags['records-file']} on table "${flags.name}" (concurrency: ${flags.concurrency})`
+      ));
+
+      for await (const records of batchRecords<Record<string, unknown>>(streamRecordsFromFile(flags['records-file']), BATCH_SIZE)) {
+         const requests = records.map((record): WriteRequest => {
+            return buildWriteRequest(record, parsedKeys, flags['ddb-json-marshall']);
+         });
+
+         queue.add(async () => { return sendBatch(client, flags.name, requests, batchOpts); });
+
+         if (queue.size > maxQueueSize) {
+            await queue.onEmpty();
+         }
+      }
+
+      await queue.onIdle();
+
+      this.log(chalk.whiteBright(
+         `Total: ${counters.deleted + counters.failed} records (${counters.deleted} deleted / ${counters.failed} failed)`
+      ));
+
+      if (counters.failed > 0) {
+         this.exit(1);
       }
    }
 
-   await queue.onIdle();
-
-   console.info(chalk.whiteBright(
-      `Total: ${counters.deleted + counters.failed} records (${counters.deleted} deleted / ${counters.failed} failed)`
-   ));
-}
-
-export default function register(command: Command): void {
-   /* eslint-disable @silvermine/silvermine/call-indentation */
-   command
-      .description('Deletes the provided records from the specified DynamoDB table')
-      .requiredOption('--name <string>', 'name of the table')
-      .requiredOption('-i, --records-file <path>', 'path to the input file (.ndjson, .jsonl, .csv, or .tsv)')
-      .option('--keys <fields>', 'comma-separated field names to use as the DynamoDB key (e.g. "pk,sk")')
-      .option('--no-ddb-json-marshall', 'don\'t attempt to marshall the records into DynamoDB JSON')
-      .option('--region <value>', 'region to send requests to')
-      .addOption(
-         new Option('--concurrency <number>', 'number of concurrent BatchWriteItem requests')
-            .argParser((value) => { return Number(value); })
-            .default(10)
-      )
-      .action(bulkDelete);
-   /* eslint-enable @silvermine/silvermine/call-indentation */
 }

@@ -5,6 +5,16 @@
    "rules": {
       "no-console": [ "error", { "allow": [ "debug", "info", "warn", "error", "table" ] } ],
       "no-process-exit": "off"
-   }
+   },
+
+   "overrides": [
+      {
+         "files": [ "bin/*.js" ],
+         "parserOptions": {
+            "sourceType": "module",
+            "ecmaVersion": 2022
+         }
+      }
+   ]
 
 }

@@ -1,10 +1,11 @@
 import { EventBridgeEvent } from 'aws-lambda';
 import { Message as SQSMessage } from '@aws-sdk/client-sqs';
-import { isSQSMessage } from '../aws/typeguards/is-sqs-message';
+import { isSQSMessage } from '../aws/typeguards/is-sqs-message.js';
 import { isString } from '@silvermine/toolbox';
-import { isEventBridgeEvent } from '../aws/typeguards/is-eventbridge-event';
+import { isEventBridgeEvent } from '../aws/typeguards/is-eventbridge-event.js';
 
 export function extractEventBridgeEventFromSQSMessage(input: SQSMessage): EventBridgeEvent<string, unknown>;
+export function extractEventBridgeEventFromSQSMessage(input: unknown): EventBridgeEvent<string, unknown>;
 export function extractEventBridgeEventFromSQSMessage(input: unknown): EventBridgeEvent<string, unknown> {
    if (!isSQSMessage(input)) {
       throw new Error(`Provided input is not an SQS message, received: ${JSON.stringify(input)}`);

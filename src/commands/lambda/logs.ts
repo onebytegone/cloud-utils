@@ -1,20 +1,13 @@
-import { Command, Option } from 'commander';
 import {
    CloudWatchLogsClient,
    FilterLogEventsCommand,
    FilterLogEventsCommandInput,
    FilterLogEventsCommandOutput,
+   FilteredLogEvent,
 } from '@aws-sdk/client-cloudwatch-logs';
 import chalk from 'chalk';
-import { quitWithError } from '../../lib/quit-with-error';
-
-interface CommandOptions {
-   name: string;
-   minutes: number;
-   filter?: string;
-   live: boolean;
-   region?: string;
-}
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../../base-command.js';
 
 interface LogQueryParams {
    logGroupName: string;
@@ -60,22 +53,6 @@ function buildQueryParams(opts: {
    return params;
 }
 
-function validateMinutes(minutes: number): void {
-   if (typeof minutes !== 'number' || isNaN(minutes)) {
-      quitWithError('Error: minutes must be a valid number');
-   }
-
-   if (minutes < 1) {
-      quitWithError('Error: minutes must be at least 1');
-   }
-}
-
-function validateFunctionName(name: string): void {
-   if (!name || name.trim() === '') {
-      quitWithError('Error: function name cannot be empty');
-   }
-}
-
 function formatLogEvent(event: LogEvent): string {
    const timestamp = new Date(event.timestamp).toISOString(),
          formattedTimestamp = chalk.gray(`[${timestamp}]`);
@@ -89,6 +66,44 @@ function formatLogEvent(event: LogEvent): string {
    }
 
    return `${formattedTimestamp} ${message}`;
+}
+
+function handleAWSError(error: unknown, logGroupName?: string): never {
+   const errorName = (error instanceof Error) ? error.name : '',
+         errorMessage = (error instanceof Error) ? error.message : '';
+
+   if (errorName === 'ResourceNotFoundException') {
+      const groupInfo = logGroupName ? ` (${logGroupName})` : '';
+
+      throw new Error(`Function not found or has no log group${groupInfo}`);
+   }
+
+   if (errorName === 'AccessDeniedException') {
+      throw new Error('Insufficient permissions to read CloudWatch Logs');
+   }
+
+   if (errorName === 'ServiceUnavailableException') {
+      throw new Error('CloudWatch Logs service unavailable, try again later');
+   }
+
+   const isCredError = errorName === 'CredentialsProviderError'
+      || errorName === 'CredentialsError'
+      || errorMessage.includes('credentials');
+
+   if (isCredError) {
+      throw new Error('AWS credentials not configured or invalid');
+   }
+
+   const isNetworkError = errorName === 'NetworkingError'
+      || errorMessage.includes('ENOTFOUND')
+      || errorMessage.includes('ECONNREFUSED')
+      || errorMessage.includes('network');
+
+   if (isNetworkError) {
+      throw new Error('Network error - unable to connect to AWS');
+   }
+
+   throw new Error(errorMessage || 'Unknown error occurred');
 }
 
 async function fetchLogs(
@@ -116,7 +131,7 @@ async function fetchLogs(
       const command = new FilterLogEventsCommand(input),
             response: FilterLogEventsCommandOutput = await client.send(command);
 
-      const events: LogEvent[] = (response.events || []).map((event: any) => {
+      const events: LogEvent[] = (response.events || []).map((event: FilteredLogEvent) => {
          return {
             timestamp: event.timestamp || 0,
             message: event.message || '',
@@ -128,47 +143,9 @@ async function fetchLogs(
          events,
          nextToken: response.nextToken,
       };
-   } catch(error: any) {
+   } catch(error: unknown) {
       handleAWSError(error, params.logGroupName);
    }
-}
-
-function handleAWSError(error: any, logGroupName?: string): never {
-   const errorName = error.name || '',
-         errorMessage = error.message || '';
-
-   if (errorName === 'ResourceNotFoundException') {
-      const groupInfo = logGroupName ? ` (${logGroupName})` : '';
-
-      quitWithError(`Error: Function not found or has no log group${groupInfo}`);
-   }
-
-   if (errorName === 'AccessDeniedException') {
-      quitWithError('Error: Insufficient permissions to read CloudWatch Logs');
-   }
-
-   if (errorName === 'ServiceUnavailableException') {
-      quitWithError('Error: CloudWatch Logs service unavailable, try again later');
-   }
-
-   const isCredError = errorName === 'CredentialsProviderError'
-      || errorName === 'CredentialsError'
-      || errorMessage.includes('credentials');
-
-   if (isCredError) {
-      quitWithError('Error: AWS credentials not configured or invalid');
-   }
-
-   const isNetworkError = errorName === 'NetworkingError'
-      || errorMessage.includes('ENOTFOUND')
-      || errorMessage.includes('ECONNREFUSED')
-      || errorMessage.includes('network');
-
-   if (isNetworkError) {
-      quitWithError('Error: Network error - unable to connect to AWS');
-   }
-
-   quitWithError(`Error: ${errorMessage || 'Unknown error occurred'}`);
 }
 
 interface LiveTailOptions {
@@ -176,12 +153,14 @@ interface LiveTailOptions {
    functionName: string;
    filter?: string;
    pollInterval: number;
+   log: (msg: string) => void;
+   exit: () => void;
 }
 
 async function startLiveTail(opts: LiveTailOptions): Promise<void> {
    process.on('SIGINT', () => {
-      console.info('\nStopping live tail...');
-      process.exit(0);
+      opts.log('\nStopping live tail...');
+      opts.exit();
    });
 
    let lastSeenTimestamp = Date.now() - (1 * 60 * 1000);
@@ -195,7 +174,7 @@ async function startLiveTail(opts: LiveTailOptions): Promise<void> {
    const initialResult = await fetchLogs(opts.client, initialParams);
 
    initialResult.events.forEach((event: LogEvent) => {
-      console.info(formatLogEvent(event));
+      opts.log(formatLogEvent(event));
 
       if (event.timestamp > lastSeenTimestamp) {
          lastSeenTimestamp = event.timestamp;
@@ -219,7 +198,7 @@ async function startLiveTail(opts: LiveTailOptions): Promise<void> {
       });
 
       newEvents.forEach((event: LogEvent) => {
-         console.info(formatLogEvent(event));
+         opts.log(formatLogEvent(event));
 
          if (event.timestamp > lastSeenTimestamp) {
             lastSeenTimestamp = event.timestamp;
@@ -227,66 +206,76 @@ async function startLiveTail(opts: LiveTailOptions): Promise<void> {
       });
    };
 
-   setInterval(pollForNewLogs, opts.pollInterval);
+   // Intentionally never resolves; process exits via SIGINT handler
+   return new Promise<void>((_resolve, reject) => {
+      setInterval(() => {
+         pollForNewLogs().catch(reject);
+      }, opts.pollInterval);
+   });
 }
 
-async function getLambdaLogs(this: Command, opts: CommandOptions): Promise<void> {
-   validateFunctionName(opts.name);
-   validateMinutes(opts.minutes);
+export default class Logs extends BaseCommand {
 
-   const client = new CloudWatchLogsClient({ region: opts.region });
+   public static summary = 'Retrieve and display Lambda function logs from CloudWatch';
 
-   if (opts.live) {
-      await startLiveTail({
-         client,
-         functionName: opts.name,
-         filter: opts.filter,
-         pollInterval: 2000,
-      });
+   public static flags = {
+      name: Flags.string({
+         description: 'name of the Lambda function',
+         required: true,
+      }),
+      minutes: Flags.integer({
+         description: 'how many minutes back to query',
+         default: 10,
+         min: 1,
+      }),
+      filter: Flags.string({
+         description: 'text pattern to filter log messages',
+      }),
+      live: Flags.boolean({
+         description: 'enable live tail mode',
+         default: false,
+      }),
+   };
 
-      return;
-   }
+   public async run(): Promise<void> {
+      const { flags } = await this.parse(Logs);
 
-   const queryParams = buildQueryParams({
-      functionName: opts.name,
-      minutes: opts.minutes,
-      filter: opts.filter,
-   });
+      const client = new CloudWatchLogsClient({ region: flags.region });
 
-   const result = await fetchLogs(client, queryParams);
+      if (flags.live) {
+         await startLiveTail({
+            client,
+            functionName: flags.name,
+            filter: flags.filter,
+            pollInterval: 2000,
+            log: this.log.bind(this),
+            exit: () => { this.exit(0); },
+         });
 
-   if (result.events.length === 0) {
-      if (opts.filter) {
-         console.info(`No logs matching filter '${opts.filter}' found`);
-      } else {
-         console.info(`No logs found for function '${opts.name}' in the past ${opts.minutes} minutes`);
+         return;
       }
 
-      return;
+      const queryParams = buildQueryParams({
+         functionName: flags.name,
+         minutes: flags.minutes,
+         filter: flags.filter,
+      });
+
+      const result = await fetchLogs(client, queryParams);
+
+      if (result.events.length === 0) {
+         if (flags.filter) {
+            this.log(`No logs matching filter '${flags.filter}' found`);
+         } else {
+            this.log(`No logs found for function '${flags.name}' in the past ${flags.minutes} minutes`);
+         }
+
+         return;
+      }
+
+      result.events.forEach((event: LogEvent) => {
+         this.log(formatLogEvent(event));
+      });
    }
 
-   result.events.forEach((event: LogEvent) => {
-      console.info(formatLogEvent(event));
-   });
-}
-
-export default function register(command: Command): void {
-   /* eslint-disable @silvermine/silvermine/call-indentation */
-   command
-      .description(
-         'Retrieves and displays AWS Lambda function logs from CloudWatch Logs'
-      )
-      .requiredOption('--name <string>', 'name of the Lambda function')
-      .addOption(
-         new Option('--minutes <number>', 'how many minutes back to query')
-            .argParser((value: string) => {
-               return Number(value);
-            })
-            .default(10)
-      )
-      .option('--filter <string>', 'text pattern to filter log messages')
-      .option('--live', 'enable live tail mode', false)
-      .option('--region <value>', 'Region to send requests to')
-      .action(getLambdaLogs);
-   /* eslint-enable @silvermine/silvermine/call-indentation */
 }
