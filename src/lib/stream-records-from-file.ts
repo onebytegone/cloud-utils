@@ -2,8 +2,7 @@ import { extname } from 'path';
 import { createReadStream } from 'fs';
 import { parse } from 'csv-parse';
 import { isEmpty, isStringUnknownMap } from '@silvermine/toolbox';
-import { streamLinesFromFile } from './stream-lines-from-file';
-import { quitWithError } from './quit-with-error';
+import { streamLinesFromFile } from './stream-lines-from-file.js';
 
 type FileFormat = 'ndjson' | 'csv' | 'tsv';
 
@@ -19,7 +18,7 @@ function detectFormat(filePath: string): FileFormat {
          format = EXTENSION_TO_FORMAT[ext];
 
    if (!format) {
-      quitWithError(`Unsupported file extension "${ext}". Supported: ${Object.keys(EXTENSION_TO_FORMAT).join(', ')}`);
+      throw new Error(`Unsupported file extension "${ext}". Supported: ${Object.keys(EXTENSION_TO_FORMAT).join(', ')}`);
    }
 
    return format;
@@ -34,7 +33,7 @@ async function* streamNdjson(filePath: string): AsyncIterable<Record<string, unk
       const parsed: unknown = JSON.parse(line);
 
       if (!isStringUnknownMap(parsed)) {
-         quitWithError(`Expected a JSON object on each line, got: ${line}`);
+         throw new Error(`Expected a JSON object on each line, got: ${line}`);
       }
 
       yield parsed; // eslint-disable-line no-restricted-syntax
@@ -48,7 +47,7 @@ async function* streamDelimited(filePath: string, delimiter: string): AsyncItera
 
    for await (const record of parser) {
       if (!isStringUnknownMap(record)) {
-         quitWithError(`Expected an object record from parsed file, got: ${JSON.stringify(record)}`);
+         throw new Error(`Expected an object record from parsed file, got: ${JSON.stringify(record)}`);
       }
 
       yield record; // eslint-disable-line no-restricted-syntax

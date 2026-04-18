@@ -1,62 +1,63 @@
-import { Command, Option } from 'commander';
 import { InvocationType, Lambda } from '@aws-sdk/client-lambda';
-import { invokeLambdaFunction } from '../../lib/aws/invoke-lambda-function';
+import { Flags } from '@oclif/core';
+import { invokeLambdaFunction } from '../../lib/aws/invoke-lambda-function.js';
+import { BaseCommand } from '../../base-command.js';
 
-interface CommandOptions {
-   name: string;
-   payload?: string;
-   invocationType: InvocationType;
-   jsonDecode: boolean;
-   region?: string;
-}
+export default class Invoke extends BaseCommand {
 
-async function invokeLambdaFunctionCommand(this: Command, opts: CommandOptions): Promise<void> {
-   const lambda = new Lambda({ region: opts.region });
+   public static summary = 'Invoke a Lambda function with the provided payload';
 
-   const resp = await invokeLambdaFunction(lambda, {
-      name: opts.name,
-      payload: opts.payload,
-      invocationType: opts.invocationType,
-   });
+   public static flags = {
+      name: Flags.string({
+         description: 'name of the Lambda function',
+         required: true,
+      }),
+      payload: Flags.string({
+         description: 'JSON payload to send to the function',
+      }),
+      'json-decode': Flags.boolean({
+         description: 'attempt to JSON decode the response payload',
+         default: true,
+         allowNo: true,
+      }),
+      'invocation-type': Flags.custom<InvocationType>({
+         description: 'invoke the function synchronously or asynchronously',
+         options: Object.values(InvocationType),
+         default: InvocationType.RequestResponse,
+      })(),
+   };
 
-   let responsePayload = resp.responsePayload;
+   public async run(): Promise<void> {
+      const { flags } = await this.parse(Invoke),
+            lambda = new Lambda({ region: flags.region });
 
-   if (opts.jsonDecode && responsePayload) {
-      try {
-         responsePayload = JSON.parse(responsePayload);
-      } catch(e) {
-         // noop
+      const resp = await invokeLambdaFunction(lambda, {
+         name: flags.name,
+         payload: flags.payload,
+         invocationType: flags['invocation-type'],
+      });
+
+      let responsePayload = resp.responsePayload;
+
+      if (flags['json-decode'] && responsePayload) {
+         try {
+            responsePayload = JSON.parse(responsePayload);
+         } catch(_e) {
+            // noop
+         }
       }
-   }
 
-   if (resp.error) {
-      console.error(JSON.stringify({
-         error: resp.error,
+      if (resp.error) {
+         this.logToStderr(JSON.stringify({
+            error: resp.error,
+            responsePayload,
+         }));
+         this.exit(1);
+      }
+
+      this.log(JSON.stringify({
          responsePayload,
       }));
-      process.exit(1);
    }
 
-   console.info(JSON.stringify({
-      responsePayload,
-   }));
-}
-
-export default function register(command: Command): void {
-   /* eslint-disable @silvermine/silvermine/call-indentation */
-   command
-      .description(
-         'Invokes a Lambda function with the provided payloads'
-      )
-      .requiredOption('--name <string>', 'name of the Lambda function')
-      .option('--payload <string>', 'JSON payload to send to the function')
-      .option('--no-json-decode', 'Don\'t attempt to JSON decode the function\'s response payload')
-      .option('--region <value>', 'Region to send requests to')
-      .addOption(
-         new Option('--invocation-type <string>', 'invoke the function synchronously or asynchronously')
-            .choices(Object.values(InvocationType))
-            .default(InvocationType.RequestResponse)
-      )
-      .action(invokeLambdaFunctionCommand);
-   /* eslint-enable @silvermine/silvermine/call-indentation */
 }
