@@ -49,7 +49,7 @@
    "devDependencies": {
       "@silvermine/eslint-config": "3.2.1",
       "@silvermine/standardization": "2.2.3",
-      "@silvermine/typescript-config": "1.0.0",
+      "@silvermine/typescript-config": "1.1.0",
       "@types/aws-lambda": "8.10.143",
       "@types/luxon": "3.4.2",
       "@types/node": "22.10.7",
