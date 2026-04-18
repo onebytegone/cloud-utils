@@ -44,7 +44,7 @@
       "luxon": "3.5.0",
       "p-queue": "9.1.2",
       "table": "6.9.0",
-      "uuid": "10.0.0"
+      "uuid": "13.0.0"
    },
    "devDependencies": {
       "@silvermine/eslint-config": "3.2.1",
