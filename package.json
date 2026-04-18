@@ -25,6 +25,10 @@
    },
    "author": "Ethan Smith",
    "license": "MIT",
+   "repository": {
+      "type": "git",
+      "url": "git+https://github.com/onebytegone/cloud-utils.git"
+   },
    "dependencies": {
       "@aws-sdk/client-cloudwatch": "3.731.1",
       "@aws-sdk/client-cloudwatch-logs": "3.974.0",
