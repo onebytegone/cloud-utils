@@ -7,6 +7,9 @@ import { Duration } from 'luxon';
 import chalk from 'chalk';
 import { table } from 'table';
 
+const SEVEN_DAYS_IN_SECONDS = 7 * 24 * 60 * 60,
+      THREE_DAYS_IN_SECONDS = 3 * 24 * 60 * 60;
+
 interface CommandOptions {
    region?: string;
    ignoreEmpty: boolean;
@@ -99,17 +102,25 @@ async function generateOldestMessageReport(this: Command, opts: CommandOptions):
          ];
       }
 
+      if (record.secondsToLoss < 0) {
+         return [
+            chalk.magenta(record.queue),
+            chalk.magenta(record.messages),
+            chalk.magenta('expired'),
+         ];
+      }
+
       const humanDuration = Duration.fromMillis(record.secondsToLoss * 1000)
          .shiftTo('days', 'hours')
          .toHuman({ maximumFractionDigits: 0 });
 
       let color: keyof typeof chalk = 'white';
 
-      if (record.secondsToLoss < 7 * 24 * 60) { // 7 days
+      if (record.secondsToLoss < SEVEN_DAYS_IN_SECONDS) {
          color = 'yellow';
       }
 
-      if (record.secondsToLoss < 3 * 24 * 60) { // 3 days
+      if (record.secondsToLoss < THREE_DAYS_IN_SECONDS) {
          color = 'red';
       }
 
