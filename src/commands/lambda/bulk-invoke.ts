@@ -2,7 +2,7 @@ import { InvocationType, LambdaClient } from '@aws-sdk/client-lambda';
 import { Command, Option } from 'commander';
 import PQueue from 'p-queue';
 import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename';
-import createWriteStream from '../../lib/create-write-stream';
+import createWriteStream, { endWriteStream } from '../../lib/create-write-stream';
 import { invokeLambdaFunction } from '../../lib/aws/invoke-lambda-function';
 import chalk from 'chalk';
 import { streamLinesFromFile } from '../../lib/stream-lines-from-file';
@@ -83,8 +83,10 @@ async function bulkInvokeLambdaFunction(this: Command, opts: CommandOptions): Pr
       `Total: ${counters.successful + counters.failed} invocations (${counters.successful} successful / ${counters.failed} failed)`
    ));
 
-   successfulInvocationsWriteStream.close();
-   failedPayloadsWriteStream.close();
+   await Promise.all([
+      endWriteStream(successfulInvocationsWriteStream),
+      endWriteStream(failedPayloadsWriteStream),
+   ]);
 }
 
 export default function register(command: Command): void {

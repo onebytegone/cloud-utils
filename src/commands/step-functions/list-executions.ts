@@ -12,7 +12,7 @@ import { getStateMachineARN } from '../../lib/aws/get-state-machine-arn';
 import { quitWithError } from '../../lib/quit-with-error';
 import { DateTime } from 'luxon';
 import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename';
-import createWriteStream from '../../lib/create-write-stream';
+import createWriteStream, { endWriteStream } from '../../lib/create-write-stream';
 
 interface CommandOptions {
    name: string;
@@ -47,7 +47,7 @@ async function listExecutions(this: Command, opts: CommandOptions): Promise<void
    for await (const listResp of paginateListExecutions({ client: sfn }, listParams)) {
       for (const execution of listResp.executions || []) {
          if (opts.startedAfter && execution.startDate && execution.startDate < opts.startedAfter.toJSDate()) {
-            writeStream.close();
+            await endWriteStream(writeStream);
             return;
          }
 
@@ -78,13 +78,13 @@ async function listExecutions(this: Command, opts: CommandOptions): Promise<void
          }) + '\n');
 
          if (opts.maxExecutions && foundExecutions >= opts.maxExecutions) {
-            writeStream.close();
+            await endWriteStream(writeStream);
             return;
          }
       }
    }
 
-   writeStream.close();
+   await endWriteStream(writeStream);
 }
 
 export default function register(command: Command): void {

@@ -2,7 +2,7 @@ import { DeleteMessageBatchCommand, GetQueueUrlCommand, ReceiveMessageCommand, S
 import { Command, Option } from 'commander';
 import { quitWithError } from '../../lib/quit-with-error';
 import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename';
-import createWriteStream from '../../lib/create-write-stream';
+import createWriteStream, { endWriteStream } from '../../lib/create-write-stream';
 import { delay } from '@silvermine/toolbox';
 
 interface CommandOptions {
@@ -85,7 +85,7 @@ async function downloadMessages(this: Command, opts: CommandOptions): Promise<vo
 
    console.info(`Downloaded ${counts.reduce((memo, v) => { return memo + v; }, 0)} messages`);
 
-   writeStream.close();
+   await endWriteStream(writeStream);
 }
 
 export default function register(command: Command): void {

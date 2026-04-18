@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import createWriteStream from '../lib/create-write-stream';
+import createWriteStream, { endWriteStream } from '../lib/create-write-stream';
 import { streamLinesFromFile } from '../lib/stream-lines-from-file';
 import { extractEventBridgeEventFromSQSMessage } from '../lib/transformers/sqs-to-eventbridge';
 import { isUndefined } from '@silvermine/toolbox';
@@ -27,7 +27,7 @@ function getTransformationFn(name: string): (input: unknown) => unknown {
    return fn;
 }
 
-async function createOutputWriter(outputFile?: string): Promise<{ write: (line: string) => void; close: () => void }> {
+async function createOutputWriter(outputFile?: string): Promise<{ write: (line: string) => void; end: () => Promise<void> }> {
    if (outputFile) {
       const stream = await createWriteStream(outputFile);
 
@@ -35,15 +35,17 @@ async function createOutputWriter(outputFile?: string): Promise<{ write: (line: 
          write: (line: string) => {
             stream.write(line + '\n');
          },
-         close: () => {
-            stream.close();
+         end: () => {
+            return endWriteStream(stream);
          },
       };
    }
 
    return {
       write: console.info,
-      close: () => {}, // eslint-disable-line no-empty-function
+      end: () => {
+         return Promise.resolve();
+      },
    };
 }
 
@@ -55,7 +57,7 @@ async function performTransformation(this: Command, opts: CommandOptions): Promi
       outputWriter.write(JSON.stringify(transformationFn(JSON.parse(line))));
    }
 
-   outputWriter.close();
+   await outputWriter.end();
 }
 
 export default function register(command: Command): void {
