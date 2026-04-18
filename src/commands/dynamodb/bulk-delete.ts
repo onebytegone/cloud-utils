@@ -1,3 +1,4 @@
+import { WriteStream } from 'fs';
 import {
    AttributeValue,
    BatchWriteItemCommand,
@@ -11,6 +12,9 @@ import { Flags } from '@oclif/core';
 import { hasDefined, isStringUnknownMap } from '@silvermine/toolbox';
 import { streamRecordsFromFile } from '../../lib/stream-records-from-file.js';
 import { batchRecords } from '../../lib/batch-records.js';
+import { generateDefaultOutputFilename } from '../../lib/generate-default-output-filename.js';
+import createWriteStream from '../../lib/create-write-stream.js';
+import endWriteStream from '../../lib/end-write-stream.js';
 import { BaseCommand } from '../../base-command.js';
 
 const BATCH_SIZE = 25,
@@ -53,8 +57,20 @@ function buildWriteRequest(record: Record<string, unknown>, keys: string[] | und
 interface SendBatchOptions {
    queue: PQueue;
    counters: { deleted: number; failed: number };
+   failedWriteStream: WriteStream;
    log: (msg: string) => void;
    warn: (msg: string) => void;
+}
+
+function recordBatchFailure(requests: WriteRequest[], error: unknown, opts: SendBatchOptions): void {
+   const message = error instanceof Error ? error.message : String(error);
+
+   opts.counters.failed += requests.length;
+   opts.warn(chalk.red(`Batch failed (${requests.length} records): ${message}`));
+
+   for (const request of requests) {
+      opts.failedWriteStream.write(JSON.stringify({ request, error: message }) + '\n');
+   }
 }
 
 async function sendBatch(
@@ -70,8 +86,7 @@ async function sendBatch(
          RequestItems: { [tableName]: requests },
       }));
    } catch(e) {
-      opts.counters.failed += requests.length;
-      opts.warn(chalk.red(`Batch failed: ${e instanceof Error ? e.message : String(e)}`));
+      recordBatchFailure(requests, e, opts);
       return;
    }
 
@@ -82,7 +97,11 @@ async function sendBatch(
    } else {
       opts.counters.deleted += requests.length - unprocessed.length;
       opts.queue.add(async () => {
-         return sendBatch(client, tableName, unprocessed, opts);
+         try {
+            await sendBatch(client, tableName, unprocessed, opts);
+         } catch(e) {
+            recordBatchFailure(unprocessed, e, opts);
+         }
       });
    }
 
@@ -105,6 +124,9 @@ export default class BulkDelete extends BaseCommand {
          description: 'path to the input file (.ndjson, .jsonl, .csv, or .tsv)',
          required: true,
       }),
+      failed: Flags.string({
+         description: 'name of the file to write information about failed deletions',
+      }),
       keys: Flags.string({
          description: 'comma-separated field names to use as the DynamoDB key (e.g. "pk,sk")',
       }),
@@ -125,11 +147,15 @@ export default class BulkDelete extends BaseCommand {
             queue = new PQueue({ concurrency: flags.concurrency }),
             maxQueueSize = flags.concurrency * 5,
             parsedKeys = flags.keys ? flags.keys.split(',').map((k) => { return k.trim(); }) : undefined,
+            failedOutputFile = flags.failed || generateDefaultOutputFilename('dynamodb', 'bulk-delete', flags.name, 'failed');
+
+      const failedWriteStream = await createWriteStream(failedOutputFile),
             counters = { deleted: 0, failed: 0 };
 
       const batchOpts: SendBatchOptions = {
          queue,
          counters,
+         failedWriteStream,
          log: this.log.bind(this),
          warn: this.logToStderr.bind(this),
       };
@@ -137,13 +163,20 @@ export default class BulkDelete extends BaseCommand {
       this.log(chalk.yellow(
          `Starting bulk delete from ${flags['records-file']} on table "${flags.name}" (concurrency: ${flags.concurrency})`
       ));
+      this.log(`${chalk.gray('Failed output:')} ${failedOutputFile}`);
 
       for await (const records of batchRecords<Record<string, unknown>>(streamRecordsFromFile(flags['records-file']), BATCH_SIZE)) {
          const requests = records.map((record): WriteRequest => {
             return buildWriteRequest(record, parsedKeys, flags['ddb-json-marshall']);
          });
 
-         queue.add(async () => { return sendBatch(client, flags.name, requests, batchOpts); });
+         queue.add(async () => {
+            try {
+               await sendBatch(client, flags.name, requests, batchOpts);
+            } catch(e) {
+               recordBatchFailure(requests, e, batchOpts);
+            }
+         });
 
          if (queue.size > maxQueueSize) {
             await queue.onEmpty();
@@ -151,6 +184,8 @@ export default class BulkDelete extends BaseCommand {
       }
 
       await queue.onIdle();
+
+      await endWriteStream(failedWriteStream);
 
       this.log(chalk.whiteBright(
          `Total: ${counters.deleted + counters.failed} records (${counters.deleted} deleted / ${counters.failed} failed)`

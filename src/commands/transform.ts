@@ -1,5 +1,6 @@
 import { Flags } from '@oclif/core';
 import createWriteStream from '../lib/create-write-stream.js';
+import endWriteStream from '../lib/end-write-stream.js';
 import { streamLinesFromFile } from '../lib/stream-lines-from-file.js';
 import { extractEventBridgeEventFromSQSMessage } from '../lib/transformers/sqs-to-eventbridge.js';
 import { isUndefined } from '@silvermine/toolbox';
@@ -21,7 +22,12 @@ function getTransformationFn(name: string): (input: unknown) => unknown {
    return fn;
 }
 
-async function createOutputWriter(log: (msg: string) => void, outputFile?: string): Promise<{ write: (line: string) => void; end: () => void }> {
+interface OutputWriter {
+   write: (line: string) => void;
+   end: () => Promise<void>;
+}
+
+async function createOutputWriter(log: (msg: string) => void, outputFile?: string): Promise<OutputWriter> {
    if (outputFile) {
       const stream = await createWriteStream(outputFile);
 
@@ -30,14 +36,16 @@ async function createOutputWriter(log: (msg: string) => void, outputFile?: strin
             stream.write(line + '\n');
          },
          end: () => {
-            stream.end();
+            return endWriteStream(stream);
          },
       };
    }
 
    return {
       write: log,
-      end: () => {}, // eslint-disable-line no-empty-function
+      end: () => {
+         return Promise.resolve();
+      },
    };
 }
 
@@ -71,7 +79,7 @@ export default class Transform extends BaseCommand {
          outputWriter.write(JSON.stringify(transformationFn(JSON.parse(line))));
       }
 
-      outputWriter.end();
+      await outputWriter.end();
    }
 
 }
