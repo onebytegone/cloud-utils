@@ -34,10 +34,6 @@
       "@aws-sdk/client-sqs": "3.731.1",
       "@aws-sdk/util-dynamodb": "3.731.1",
       "@silvermine/toolbox": "0.4.0",
-      "@silvermine/typescript-config": "1.0.0",
-      "@types/aws-lambda": "8.10.143",
-      "@types/luxon": "3.4.2",
-      "@types/uuid": "10.0.0",
       "chalk": "4.1.2",
       "commander": "12.1.0",
       "csv-parse": "5.5.6",
@@ -45,13 +41,17 @@
       "omelette": "0.4.17",
       "p-queue": "6.6.2",
       "table": "6.9.0",
-      "ts-node": "10.9.2",
-      "typescript": "5.7.3",
       "uuid": "10.0.0"
    },
    "devDependencies": {
       "@silvermine/eslint-config": "3.2.1",
       "@silvermine/standardization": "2.2.3",
-      "@types/omelette": "0.4.4"
+      "@silvermine/typescript-config": "1.0.0",
+      "@types/aws-lambda": "8.10.143",
+      "@types/luxon": "3.4.2",
+      "@types/omelette": "0.4.4",
+      "@types/uuid": "10.0.0",
+      "ts-node": "10.9.2",
+      "typescript": "5.7.3"
    }
 }
