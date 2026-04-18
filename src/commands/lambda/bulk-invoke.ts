@@ -69,34 +69,45 @@ export default class BulkInvoke extends BaseCommand {
 
       for await (const payload of streamLinesFromFile(flags['payloads-file'])) {
          queue.add(async () => {
-            const resp = await invokeLambdaFunction(lambda, {
-               name: flags.name,
-               invocationType,
-               payload,
-            });
+            try {
+               const resp = await invokeLambdaFunction(lambda, {
+                  name: flags.name,
+                  invocationType,
+                  payload,
+               });
 
-            let responsePayload = resp.responsePayload;
+               let responsePayload = resp.responsePayload;
 
-            if (flags['json-decode'] && responsePayload) {
-               try {
-                  responsePayload = JSON.parse(responsePayload);
-               } catch(_e) {
-                  // noop
+               if (flags['json-decode'] && responsePayload) {
+                  try {
+                     responsePayload = JSON.parse(responsePayload);
+                  } catch(_e) {
+                     // noop
+                  }
                }
-            }
 
-            if (resp.error) {
+               if (resp.error) {
+                  counters.failed += 1;
+                  failedPayloadsWriteStream.write(JSON.stringify({
+                     payload,
+                     error: resp.error,
+                     responsePayload,
+                  }) + '\n');
+               } else {
+                  counters.successful += 1;
+                  successfulInvocationsWriteStream.write(JSON.stringify({
+                     payload,
+                     responsePayload,
+                  }) + '\n');
+               }
+            } catch(e) {
+               const message = e instanceof Error ? e.message : String(e);
+
                counters.failed += 1;
+               this.logToStderr(chalk.red(`Unexpected invocation error: ${message}`));
                failedPayloadsWriteStream.write(JSON.stringify({
                   payload,
-                  error: resp.error,
-                  responsePayload,
-               }) + '\n');
-            } else {
-               counters.successful += 1;
-               successfulInvocationsWriteStream.write(JSON.stringify({
-                  payload,
-                  responsePayload,
+                  error: message,
                }) + '\n');
             }
 
