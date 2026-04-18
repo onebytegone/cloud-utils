@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [our coding standards][commit-messages] for commit guidelines.
 
+## [0.2.0](https://github.com/onebytegone/cloud-utils/compare/v0.1.0...v0.2.0) (2026-04-18)
+
+
+### Features
+
+* add --region <region> flag to all commands ([5f9fe41](https://github.com/onebytegone/cloud-utils/commit/5f9fe41a10199f1fbd4f239f967ac6d802837262))
+* add dyndb bulk-delete command ([dae9cf6](https://github.com/onebytegone/cloud-utils/commit/dae9cf6e8590a36681b1763148e33d56862b5150))
+* add lambda bulk-invoke command ([cb81b22](https://github.com/onebytegone/cloud-utils/commit/cb81b22c10491145e4090431becbe950c881c467))
+* add lambda invoke command ([0d25e95](https://github.com/onebytegone/cloud-utils/commit/0d25e9567df2c9cfb43c31a85ff977f977784b67))
+* add lambda logs helper ([d117c64](https://github.com/onebytegone/cloud-utils/commit/d117c6428314f72a727b226026dd5722e53c7b93))
+* add option to ignore empty queues in oldest message report ([f32e5bd](https://github.com/onebytegone/cloud-utils/commit/f32e5bdd4976a5c8aab16ed019739f380e046d56))
+* add SQS message to EventBridge event transformer ([85410c8](https://github.com/onebytegone/cloud-utils/commit/85410c80b2029dafe78321555f457439b95d4fd0))
+* add step functions start executions command ([eef44e1](https://github.com/onebytegone/cloud-utils/commit/eef44e1e72f846f82f9a58a2214192fa0c7b7e96))
+* rebuild CLI using oclif with ESM and tab completion ([e566c08](https://github.com/onebytegone/cloud-utils/commit/e566c088222caef2701c5d8eb5b725feeb918ad0))
+
+
+### Bug Fixes
+
+* allow more retries when list executions requests are throttled ([26f3bf9](https://github.com/onebytegone/cloud-utils/commit/26f3bf91a8bd988fe6389d2941c1e3277f73a408))
+* await writeStream flush before exiting ([d515f7c](https://github.com/onebytegone/cloud-utils/commit/d515f7c651cd2a44c0ac89f14365bf0bd09bcb3a))
+* correct time threshold calculations in oldest-message-report ([e6d48eb](https://github.com/onebytegone/cloud-utils/commit/e6d48ebf5c604c88bf30e02d67022dd693e13d2c))
+* surface pqueue task failures in bulk commands ([2a7f7a2](https://github.com/onebytegone/cloud-utils/commit/2a7f7a259fcae4d10d0fc25f8582579ca871ddc8))
+* use writeStream.end() to flush before closing ([531e0a7](https://github.com/onebytegone/cloud-utils/commit/531e0a7b87145c8540d6557f9ea70ade8c0004d4))
+
+
 ## 0.1.0 (2024-02-12)
 
 
