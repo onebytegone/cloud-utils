@@ -2,7 +2,9 @@
 
 ## What?
 
-A collection of misc utils for working with AWS resources.
+A CLI toolkit for common AWS operations. Provides commands for interacting with DynamoDB,
+Lambda, SQS, and Step Functions; including querying and scanning tables, invoking
+functions, managing messages, and running state machine executions.
 
 ## Usage
 
@@ -13,13 +15,13 @@ cloud-utils
 ### Install/Upgrade
 
 ```bash
-npm i -g 'git@github.com:onebytegone/cloud-utils.git'
+npm i -g @onebytegone/cloud-utils
 ```
 
-### Install Bash Autocompletion
+### Install CLI Autocompletion
 
 ```bash
-cloud-utils --install-autocompletion
+cloud-utils autocomplete
 ```
 
 ## License
