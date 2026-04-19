@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [our coding standards][commit-messages] for commit guidelines.
 
+## [0.3.0](https://github.com/onebytegone/cloud-utils/compare/v0.2.1...v0.3.0) (2026-04-19)
+
+
+### Features
+
+* add --rcu flag to dynamodb query command ([b69ade9](https://github.com/onebytegone/cloud-utils/commit/b69ade96e40df819eae6df0c52a013c21f305a6b))
+* add dynamodb query command ([8d71a98](https://github.com/onebytegone/cloud-utils/commit/8d71a98bd85aaa7117e9ed23cc653c4384b0272a))
+* add dynamodb segmented scan command ([f26bb35](https://github.com/onebytegone/cloud-utils/commit/f26bb3585124f31bc2209637de0d9979b5974125))
+
+
+### Bug Fixes
+
+* update aws-sdk-js-v3 monorepo ([706b07f](https://github.com/onebytegone/cloud-utils/commit/706b07faf3a5dee64a2a686f786ffe13de267845))
+* update dependency @silvermine/toolbox to v0.7.0 ([82d0d80](https://github.com/onebytegone/cloud-utils/commit/82d0d80aaff53bbf66c77452b4bc0a195263adc1))
+
+
 ## [0.2.0](https://github.com/onebytegone/cloud-utils/compare/v0.1.0...v0.2.0) (2026-04-18)
 
 
