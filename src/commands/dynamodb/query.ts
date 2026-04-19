@@ -7,6 +7,7 @@ import {
    KeySchemaElement,
    paginateQuery,
    QueryCommandInput,
+   ReturnConsumedCapacity,
 } from '@aws-sdk/client-dynamodb';
 import { Flags } from '@oclif/core';
 import { isString } from '@silvermine/toolbox';
@@ -103,6 +104,7 @@ interface EmitArgs {
    sink: Writable;
    outputStream: WriteStream | undefined;
    limit: number | undefined;
+   reportRcu: boolean;
 }
 
 export default class Query extends BaseCommand {
@@ -151,6 +153,10 @@ export default class Query extends BaseCommand {
          char: 'o',
          description: 'write NDJSON to this file instead of stdout',
       }),
+      rcu: Flags.boolean({
+         description: 'report total consumed read capacity units (RCUs) to stderr on completion',
+         default: false,
+      }),
    };
 
    public async run(): Promise<void> {
@@ -193,6 +199,10 @@ export default class Query extends BaseCommand {
          });
       }, 2);
 
+      if (flags.rcu) {
+         queryInput.ReturnConsumedCapacity = ReturnConsumedCapacity.TOTAL;
+      }
+
       this.logToStderr(chalk.gray(
          `Querying ${flags.table}${flags.index ? ` / ${flags.index}` : ''}...`
       ));
@@ -203,7 +213,9 @@ export default class Query extends BaseCommand {
 
       const sink: Writable = outputStream || process.stdout;
 
-      await this.emitResults({ client, queryInput, sink, outputStream, limit: flags.limit });
+      await this.emitResults({
+         client, queryInput, sink, outputStream, limit: flags.limit, reportRcu: flags.rcu,
+      });
    }
 
    private runOrExit<T>(fn: () => T, exitCode: number): T {
@@ -223,13 +235,18 @@ export default class Query extends BaseCommand {
    }
 
    private async emitResults(args: EmitArgs): Promise<void> {
-      const { client, queryInput, sink, outputStream, limit } = args;
+      const { client, queryInput, sink, outputStream, limit, reportRcu } = args;
 
-      let emitted = 0;
+      let emitted = 0,
+          totalRcu = 0;
 
       try {
          try {
             for await (const page of paginateQuery({ client }, queryInput)) {
+               if (page.ConsumedCapacity?.CapacityUnits !== undefined) {
+                  totalRcu += page.ConsumedCapacity.CapacityUnits;
+               }
+
                for (const item of page.Items || []) {
                   await emitItemNDJSON(sink, item);
                   emitted += 1;
@@ -250,6 +267,10 @@ export default class Query extends BaseCommand {
       }
 
       this.logToStderr(chalk.gray(`Done. ${emitted} item(s).`));
+
+      if (reportRcu) {
+         this.logToStderr(chalk.gray(`Consumed capacity: ${totalRcu.toFixed(2)} RCU`));
+      }
    }
 
 }
