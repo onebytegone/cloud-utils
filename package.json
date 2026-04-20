@@ -45,7 +45,7 @@
       "@silvermine/toolbox": "0.7.0",
       "chalk": "5.6.2",
       "csv-parse": "5.5.6",
-      "luxon": "3.5.0",
+      "luxon": "3.7.2",
       "p-queue": "9.1.2",
       "table": "6.9.0",
       "uuid": "10.0.0"
@@ -55,7 +55,7 @@
       "@silvermine/standardization": "2.2.3",
       "@silvermine/typescript-config": "1.0.0",
       "@types/aws-lambda": "8.10.143",
-      "@types/luxon": "3.4.2",
+      "@types/luxon": "3.7.1",
       "@types/node": "22.10.7",
       "@types/uuid": "10.0.0",
       "typescript": "5.9.3"
