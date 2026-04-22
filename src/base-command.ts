@@ -10,6 +10,17 @@ export abstract class BaseCommand extends Command {
          helpGroup: 'GLOBAL',
          env: 'AWS_REGION',
       }),
+      silent: Flags.boolean({
+         description: 'suppress informational messages; only errors and data are emitted',
+         helpGroup: 'GLOBAL',
+         default: false,
+      }),
    };
+
+   protected logInfoToStderr(message: string): void {
+      if (!this.argv.includes('--silent')) {
+         this.logToStderr(message);
+      }
+   }
 
 }

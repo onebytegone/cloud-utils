@@ -105,7 +105,7 @@ export default class Scan extends BaseCommand {
       shuffleInPlace(indices);
 
       if (existingCursor) {
-         this.logToStderr(chalk.gray(
+         this.logInfoToStderr(chalk.gray(
             `Resuming from ${cursorPath}: ${indices.length}/${flags.segments} segments remaining`
          ));
       }
@@ -177,7 +177,7 @@ export default class Scan extends BaseCommand {
       process.on('SIGINT', signalHandler);
       process.on('SIGTERM', signalHandler);
 
-      this.logToStderr(chalk.gray(
+      this.logInfoToStderr(chalk.gray(
          `Scanning ${flags.table}${flags.index ? ` / ${flags.index}` : ''} `
          + `with ${flags.segments} segments, ${flags.concurrency} concurrent...`
       ));
@@ -204,7 +204,7 @@ export default class Scan extends BaseCommand {
                   state.emitted += 1;
 
                   if (state.emitted % STATUS_INTERVAL === 0) {
-                     this.logToStderr(chalk.gray(
+                     this.logInfoToStderr(chalk.gray(
                         `Progress: ${state.emitted} items, `
                         + `${completedSegmentCount(state)}/${flags.segments} segments`
                      ));
@@ -281,7 +281,7 @@ export default class Scan extends BaseCommand {
          && !outcome.shouldStop
          && !outcome.cursorFlushFailed;
 
-      this.logToStderr(chalk.gray(
+      this.logInfoToStderr(chalk.gray(
          `Done. ${state.emitted} items, ${completed}/${state.totalSegments} segments succeeded.`
       ));
 

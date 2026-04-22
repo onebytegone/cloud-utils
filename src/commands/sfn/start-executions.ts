@@ -69,7 +69,7 @@ export default class StartExecutions extends BaseCommand {
       const failedWriteStream = await createWriteStream(failedOutputFile),
             counters = { started: 0, failed: 0 };
 
-      this.log(`${chalk.gray('Failed output:')} ${failedOutputFile}`);
+      this.logInfoToStderr(`${chalk.gray('Failed output:')} ${failedOutputFile}`);
 
       for await (const inputLine of streamLinesFromFile(flags['inputs-file'])) {
          queue.add(async () => {
@@ -101,7 +101,7 @@ export default class StartExecutions extends BaseCommand {
 
       await endWriteStream(failedWriteStream);
 
-      this.log(chalk.whiteBright(
+      this.logInfoToStderr(chalk.whiteBright(
          `Total: ${counters.started + counters.failed} executions (${counters.started} started / ${counters.failed} failed)`
       ));
 

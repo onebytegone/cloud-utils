@@ -156,14 +156,14 @@ export default class BulkDelete extends BaseCommand {
          queue,
          counters,
          failedWriteStream,
-         log: this.log.bind(this),
+         log: this.logInfoToStderr.bind(this),
          warn: this.logToStderr.bind(this),
       };
 
-      this.log(chalk.yellow(
+      this.logInfoToStderr(chalk.yellow(
          `Starting bulk delete from ${flags['records-file']} on table "${flags.name}" (concurrency: ${flags.concurrency})`
       ));
-      this.log(`${chalk.gray('Failed output:')} ${failedOutputFile}`);
+      this.logInfoToStderr(`${chalk.gray('Failed output:')} ${failedOutputFile}`);
 
       for await (const records of batchRecords<Record<string, unknown>>(streamRecordsFromFile(flags['records-file']), BATCH_SIZE)) {
          const requests = records.map((record): WriteRequest => {
@@ -187,7 +187,7 @@ export default class BulkDelete extends BaseCommand {
 
       await endWriteStream(failedWriteStream);
 
-      this.log(chalk.whiteBright(
+      this.logInfoToStderr(chalk.whiteBright(
          `Total: ${counters.deleted + counters.failed} records (${counters.deleted} deleted / ${counters.failed} failed)`
       ));
 

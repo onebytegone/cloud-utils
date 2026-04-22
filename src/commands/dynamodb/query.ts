@@ -203,7 +203,7 @@ export default class Query extends BaseCommand {
          queryInput.ReturnConsumedCapacity = ReturnConsumedCapacity.TOTAL;
       }
 
-      this.logToStderr(chalk.gray(
+      this.logInfoToStderr(chalk.gray(
          `Querying ${flags.table}${flags.index ? ` / ${flags.index}` : ''}...`
       ));
 
@@ -266,10 +266,10 @@ export default class Query extends BaseCommand {
          this.exit(1);
       }
 
-      this.logToStderr(chalk.gray(`Done. ${emitted} item(s).`));
+      this.logInfoToStderr(chalk.gray(`Done. ${emitted} item(s).`));
 
       if (reportRcu) {
-         this.logToStderr(chalk.gray(`Consumed capacity: ${totalRcu.toFixed(2)} RCU`));
+         this.logInfoToStderr(chalk.gray(`Consumed capacity: ${totalRcu.toFixed(2)} RCU`));
       }
    }
 

@@ -46,7 +46,7 @@ export default class DownloadMessages extends BaseCommand {
 
       const outputFile = flags.output || generateDefaultOutputFilename('sqs', 'download-messages', flags.name);
 
-      this.log(`Downloading messages from ${queueURL} to ${outputFile}`);
+      this.logInfoToStderr(`Downloading messages from ${queueURL} to ${outputFile}`);
 
       const writeStream = await createWriteStream(outputFile),
             processedMessages = new Set<string>();
@@ -77,7 +77,7 @@ export default class DownloadMessages extends BaseCommand {
          }
 
          if (processedMessages.size > 0 && processedMessages.size % 100 === 0) {
-            this.log(`${processedMessages.size} messages downloaded...`);
+            this.logInfoToStderr(`${processedMessages.size} messages downloaded...`);
          }
 
          return newMessageCount;
@@ -93,11 +93,11 @@ export default class DownloadMessages extends BaseCommand {
             count += newMessagesFound;
 
             if (!newMessagesFound && emptyReceiveCount >= 3) {
-               this.log(`No new messages appear to be left, finished. (worker ${workerID})`);
+               this.logInfoToStderr(`No new messages appear to be left, finished. (worker ${workerID})`);
                break;
             } else if (!newMessagesFound) {
                emptyReceiveCount += 1;
-               this.log(`No new messages appear to be left, waiting... (worker ${workerID})`);
+               this.logInfoToStderr(`No new messages appear to be left, waiting... (worker ${workerID})`);
                await delay(10);
             }
          }
@@ -105,7 +105,7 @@ export default class DownloadMessages extends BaseCommand {
          return count;
       }));
 
-      this.log(`Downloaded ${counts.reduce((memo, v) => { return memo + v; }, 0)} messages`);
+      this.logInfoToStderr(`Downloaded ${counts.reduce((memo, v) => { return memo + v; }, 0)} messages`);
 
       await endWriteStream(writeStream);
    }

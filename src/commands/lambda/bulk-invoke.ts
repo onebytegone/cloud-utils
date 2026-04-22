@@ -61,12 +61,12 @@ export default class BulkInvoke extends BaseCommand {
             successfulInvocationsWriteStream = await createWriteStream(successfulInvocationsFile),
             counters = { failed: 0, successful: 0 };
 
-      this.log(chalk.yellow(
+      this.logInfoToStderr(chalk.yellow(
          `Starting bulk invocation of ${flags.name} from ${flags['payloads-file']}`
          + ` (type: ${flags['invocation-type']}, concurrency: ${flags.concurrency})`
       ));
-      this.log(`${chalk.gray('Successful output:')} ${successfulInvocationsFile}`);
-      this.log(`${chalk.gray('Failed output:')} ${failedInvocationsFile}`);
+      this.logInfoToStderr(`${chalk.gray('Successful output:')} ${successfulInvocationsFile}`);
+      this.logInfoToStderr(`${chalk.gray('Failed output:')} ${failedInvocationsFile}`);
 
       for await (const payload of streamLinesFromFile(flags['payloads-file'])) {
          queue.add(async () => {
@@ -113,7 +113,7 @@ export default class BulkInvoke extends BaseCommand {
             }
 
             if ((counters.successful + counters.failed) % 10 === 0) {
-               this.log(chalk.gray(`Status: ${counters.successful} successful / ${counters.failed} failed`));
+               this.logInfoToStderr(chalk.gray(`Status: ${counters.successful} successful / ${counters.failed} failed`));
             }
          });
 
@@ -129,7 +129,7 @@ export default class BulkInvoke extends BaseCommand {
          endWriteStream(failedPayloadsWriteStream),
       ]);
 
-      this.log(chalk.whiteBright(
+      this.logInfoToStderr(chalk.whiteBright(
          `Total: ${counters.successful + counters.failed} invocations (${counters.successful} successful / ${counters.failed} failed)`
       ));
 
