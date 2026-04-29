@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [our coding standards][commit-messages] for commit guidelines.
 
+### [0.3.1](https://github.com/onebytegone/cloud-utils/compare/v0.3.0...v0.3.1) (2026-04-29)
+
+
+### Features
+
+* add --silent flag to suppress informational messages ([8cc0512](https://github.com/onebytegone/cloud-utils/commit/8cc0512848bd13aa65d8c17a3d964841e6d90b5d))
+
+
 ## [0.3.0](https://github.com/onebytegone/cloud-utils/compare/v0.2.1...v0.3.0) (2026-04-19)
 
 
