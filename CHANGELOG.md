@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [our coding standards][commit-messages] for commit guidelines.
 
+### [0.3.2](https://github.com/onebytegone/cloud-utils/compare/v0.3.1...v0.3.2) (2026-05-12)
+
+
+### Features
+
+* add sqs start-dlq-redrive command ([fe4a49c](https://github.com/onebytegone/cloud-utils/commit/fe4a49c7c70a6226d152b41cc6c1edaf69a68d45))
+
+
+### Bug Fixes
+
+* update aws-sdk-js-v3 monorepo to v3.1039.0 ([70512bf](https://github.com/onebytegone/cloud-utils/commit/70512bf84499d8a2e7556bd0bf86b08a3d2bc062))
+* update dependency csv-parse to v5.6.0 ([4b45c33](https://github.com/onebytegone/cloud-utils/commit/4b45c33b2da82179030a33c1513829273607c806))
+
+
 ### [0.3.1](https://github.com/onebytegone/cloud-utils/compare/v0.3.0...v0.3.1) (2026-04-29)
 
 
