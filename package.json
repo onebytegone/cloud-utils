@@ -18,10 +18,7 @@
       "tsc": "tsc -p ./tsconfig.json --pretty",
       "build": "tsc -p ./tsconfig.build.json",
       "prepack": "npm run build",
-      "standards": "npm run commitlint && npm run markdownlint && npm run eslint",
-      "release:preview": "node ./node_modules/@silvermine/standardization/scripts/release.js preview",
-      "release:prep-changelog": "node ./node_modules/@silvermine/standardization/scripts/release.js prep-changelog",
-      "release:finalize": "node ./node_modules/@silvermine/standardization/scripts/release.js finalize"
+      "standards": "npm run commitlint && npm run markdownlint && npm run eslint"
    },
    "author": "Ethan Smith",
    "license": "MIT",
@@ -52,7 +49,7 @@
    },
    "devDependencies": {
       "@silvermine/eslint-config": "3.2.1",
-      "@silvermine/standardization": "2.2.3",
+      "@silvermine/standardization": "2.3.0",
       "@silvermine/typescript-config": "1.0.0",
       "@types/aws-lambda": "8.10.143",
       "@types/luxon": "3.4.2",
