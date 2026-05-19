@@ -92,10 +92,13 @@ async function sendBatch(
 
    const unprocessed = response.UnprocessedItems?.[tableName];
 
-   if (!unprocessed || unprocessed.length === 0) {
-      opts.counters.deleted += requests.length;
-   } else {
-      opts.counters.deleted += requests.length - unprocessed.length;
+   const newlyCompleted = !unprocessed || unprocessed.length === 0
+      ? requests.length
+      : requests.length - unprocessed.length;
+
+   opts.counters.deleted += newlyCompleted;
+
+   if (unprocessed && unprocessed.length > 0) {
       opts.queue.add(async () => {
          try {
             await sendBatch(client, tableName, unprocessed, opts);
@@ -105,7 +108,10 @@ async function sendBatch(
       });
    }
 
-   if ((opts.counters.deleted + opts.counters.failed) % STATUS_INTERVAL === 0) {
+   const total = opts.counters.deleted + opts.counters.failed,
+         prevTotal = total - newlyCompleted;
+
+   if (Math.floor(total / STATUS_INTERVAL) > Math.floor(prevTotal / STATUS_INTERVAL)) {
       opts.log(chalk.gray(`Status: ${opts.counters.deleted} deleted / ${opts.counters.failed} failed`));
    }
 }
