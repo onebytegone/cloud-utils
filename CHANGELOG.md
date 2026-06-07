@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [our coding standards][commit-messages] for commit guidelines.
 
+### [0.3.4](https://github.com/onebytegone/cloud-utils/compare/v0.3.3...v0.3.4) (2026-06-07)
+
+
+### Bug Fixes
+
+* keep NDJSON records with U+2028/U+2029 intact when reading ([1853a48](https://github.com/onebytegone/cloud-utils/commit/1853a48d51052a84f71481bde3d76bcba00ca732))
+
+
 ### [0.3.3](https://github.com/onebytegone/cloud-utils/compare/v0.3.2...v0.3.3) (2026-05-19)
 
 
