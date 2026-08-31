@@ -36,7 +36,7 @@
       "@aws-sdk/client-sqs": "3.1039.0",
       "@aws-sdk/util-dynamodb": "3.996.2",
       "@oclif/core": "4.10.5",
-      "@oclif/plugin-autocomplete": "3.2.45",
+      "@oclif/plugin-autocomplete": "3.3.0",
       "@oclif/plugin-help": "6.2.44",
       "@oclif/plugin-not-found": "3.2.80",
       "@oclif/plugin-version": "2.2.42",
